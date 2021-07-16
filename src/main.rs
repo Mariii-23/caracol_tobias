@@ -1,8 +1,12 @@
+mod constantes;
+// use commands::send_msg::*;
+
 use std::{env, fs::read_to_string, fs::File, io, io::prelude::*};
 
 extern crate serenity;
 
 use serenity::{
+    // async_trait,
     // client::bridge::gateway::ShardManager,
     // framework::standard::{
     //     help_commands,
@@ -11,7 +15,7 @@ use serenity::{
     //     DispatchError::CheckFailed,
     //     HelpOptions, StandardFramework,
     // },
-    model::{gateway::Ready, id::UserId, prelude::Message},
+    model::{channel::Message, gateway::Ready, id::UserId},
     prelude::*,
 };
 
@@ -19,8 +23,23 @@ struct Handler;
 
 impl EventHandler for Handler {
     fn message(&self, ctx: Context, msg: Message) {
-        if msg.content == "§ping" {
+        // let show(string) = {
+        //     if let Err(error) = msg.channel_id.say(&ctx.http, string) {
+        //         println!("Error sending message: {:?}", error);
+        //     }
+        // };
+
+        if msg.content ==
+            // "§ping" => show_msg("Pong§§§", msg, ctx),
+            // "§help" => show_msg(HELP_MESSAGE, msg, ctx),
+            "§ping"
+        {
+            // send_msg::ping_pong(&self, ctx, msg);
             if let Err(error) = msg.channel_id.say(&ctx.http, "Pong§§§") {
+                println!("Error sending message: {:?}", error);
+            }
+        } else if msg.content == constantes::HELP_COMMAND {
+            if let Err(error) = msg.channel_id.say(&ctx.http, constantes::HELP_MESSAGE) {
                 println!("Error sending message: {:?}", error);
             }
         }
@@ -30,15 +49,6 @@ impl EventHandler for Handler {
         println!("{} is ready", ready.user.name);
     }
 }
-
-const HELP_MESSAGE: &str = "
-    HIII BITCHESSS!!!
-
-    We are working!!!
-    YEIIIII
-";
-
-const HELP_COMMAND: &str = "§help";
 
 fn read_file_and_get_token() -> String {
     // let mut file = File::open(".env").expect("Error reading file");
@@ -50,6 +60,7 @@ fn read_file_and_get_token() -> String {
 }
 
 fn main() {
+    // Configure the client with your Discord bot token in the environment.
     let TOKEN = read_file_and_get_token();
     let mut client = Client::new(&TOKEN, Handler).expect("Error creating client");
 
