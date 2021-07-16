@@ -15,13 +15,24 @@ use serenity::{
     //     DispatchError::CheckFailed,
     //     HelpOptions, StandardFramework,
     // },
-    model::{channel::Message, gateway::Ready, id::UserId},
+    model::{channel::Message, channel::Reaction, gateway::Ready, id::UserId},
     prelude::*,
 };
 
 struct Handler;
 
 impl EventHandler for Handler {
+    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        // // send a message to channel
+        // if let Err(why) = reaction.channel_id.say(
+        //     &ctx.http,
+        //     format!("{} left a reaction", reaction.user(&ctx.http).unwrap().name),
+        // ) {
+        //     println!("Error reaction to a reaction: {:?}", why);
+        // }
+        println!("{} left a reaction", reaction.user(&ctx.http).unwrap().name);
+    }
+
     fn message(&self, ctx: Context, msg: Message) {
         // let show(string) = {
         //     if let Err(error) = msg.channel_id.say(&ctx.http, string) {
@@ -41,6 +52,10 @@ impl EventHandler for Handler {
         } else if msg.content == constantes::HELP_COMMAND {
             if let Err(error) = msg.channel_id.say(&ctx.http, constantes::HELP_MESSAGE) {
                 println!("Error sending message: {:?}", error);
+            }
+        } else if msg.content == constantes::HI_COMMAND {
+            if let Err(why) = msg.react(ctx, '🔥') {
+                println!("Error reacting to message: {:?}", why);
             }
         }
     }

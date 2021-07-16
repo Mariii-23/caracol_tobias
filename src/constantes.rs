@@ -11,3 +11,5 @@ You are amazing!!!😏
 ";
 
 pub const HELP_COMMAND: &str = "§help";
+
+pub const HI_COMMAND: &str = "§hi";
