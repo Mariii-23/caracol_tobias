@@ -1,10 +1,12 @@
 mod commands;
 mod constantes;
 
+use commands::{EMOJI_GROUP, GENERAL_GROUP, OWNERS_GROUP};
 use std::{fs::File, io::prelude::*};
 
 extern crate serenity;
 use serenity::{
+    framework::standard::StandardFramework,
     model::channel::{
         Reaction,
         ReactionType::{Custom, Unicode},
@@ -52,7 +54,13 @@ fn main() {
     let mut client = Client::new(&token, Handler).expect("Error creating client");
 
     // init commands
-    commands::init_commands(&mut client);
+    client.with_framework(
+        StandardFramework::new()
+            .configure(|c| c.prefix(constantes::PREFIX)) // set the bot's prefix
+            .group(&GENERAL_GROUP)
+            .group(&EMOJI_GROUP)
+            .group(&OWNERS_GROUP),
+    );
 
     // start
     if let Err(msg) = client.start() {
