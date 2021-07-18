@@ -1,8 +1,8 @@
 mod commands;
 mod constantes;
 
-use commands::{EMOJI_GROUP, GENERAL_GROUP, OWNERS_GROUP};
-use std::{fs::File, io::prelude::*};
+use commands::{ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP};
+use std::{collections::HashSet, fs::File, io::prelude::*};
 
 extern crate serenity;
 use serenity::{
@@ -53,16 +53,27 @@ fn main() {
     let token = read_file_and_get_token();
     let mut client = Client::new(&token, Handler).expect("Error creating client");
 
-    // init commands
+    // We will fetch our bot's owners
+    let owners = match client.cache_and_http.http.get_current_application_info() {
+        Ok(info) => {
+            let mut owners = HashSet::new();
+            owners.insert(info.owner.id);
+
+            owners
+        }
+        Err(why) => panic!("Could not access application info: {:?}", why),
+    };
+
+    // Init commands
     client.with_framework(
         StandardFramework::new()
-            .configure(|c| c.prefix(constantes::PREFIX)) // set the bot's prefix
+            .configure(|c| c.prefix(constantes::PREFIX).owners(owners)) // set the bot's prefix
             .group(&GENERAL_GROUP)
             .group(&EMOJI_GROUP)
-            .group(&OWNERS_GROUP),
+            .group(&ADMINS_GROUP),
     );
 
-    // start
+    // Start
     if let Err(msg) = client.start() {
         println!("Error: {:?}", msg);
     }

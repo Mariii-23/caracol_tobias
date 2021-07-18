@@ -9,12 +9,11 @@ use serenity::{
 };
 
 #[group]
+#[owners_only]
 #[commands(say)]
-struct Owners;
+struct Admins;
 
 #[command]
-// TODO: dont work if this
-// #[owners_only]
 #[description = "The bot will repeat what you given\n"]
 #[example = ">say Hello World\nBot: Hello World\n"]
 #[help_available]
