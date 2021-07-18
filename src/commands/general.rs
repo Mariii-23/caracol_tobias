@@ -22,6 +22,11 @@ use serenity::{
 use std::collections::HashSet;
 
 #[help]
+#[individual_command_tip = "§help [command]  Gives info about the command\n"]
+// #[strikethrough_commands_tip_in_guild(None)]
+// If a user lacks permissions for a command, we can hide the command
+#[lacking_permissions = "Hide"]
+// #[lacking_role = "Nothing"]
 fn help(
     context: &mut Context,
     msg: &Message,
@@ -34,13 +39,13 @@ fn help(
 }
 
 #[group]
-#[description = "Some general commands\n"]
 #[commands(ping, hi)]
+#[description = "Some general commands\n"]
+// #[individual_command_tip = String::new("{}help [command]",constantes::PREFIX)]
 struct General;
 
 #[command]
 #[description = "Says pong on \"§ping\"\n"]
-#[help_available]
 fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
     msg.reply(&ctx, "Pong§§§")?;
     Ok(())
@@ -48,7 +53,6 @@ fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[description = "Just react to your hi\n"]
-#[help_available(false)]
 #[aliases(hello, Hello, Hi)]
 fn hi(ctx: &mut Context, msg: &Message) -> CommandResult {
     msg.reply(&ctx, "HII")?;

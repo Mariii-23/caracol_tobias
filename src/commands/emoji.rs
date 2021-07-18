@@ -19,6 +19,7 @@ use serenity::{
 struct Emoji;
 
 #[command]
+#[description = "Sends out an bird emoji in the chat\n"]
 fn bird(ctx: &mut Context, msg: &Message) -> CommandResult {
     msg.channel_id.say(&ctx, "🐦")?;
     Ok(())

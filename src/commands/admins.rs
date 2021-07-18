@@ -13,12 +13,13 @@ use crate::cmd_ctx_msg_args;
 #[group]
 #[owners_only]
 #[commands(say, say2)]
-#[description = "Admin commands\n"]
+#[description = "Admin only\n"]
+// #[help_available(false)]
 struct Admins;
 
 #[command]
 #[description = "The bot will repeat what you given\n"]
-#[example = ">say Hello World\nBot: Hello World\n"]
+#[example = " Hello World\nBot: Hello World\n"]
 #[help_available]
 fn say(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     msg.channel_id.say(&ctx, args.rest())?;
