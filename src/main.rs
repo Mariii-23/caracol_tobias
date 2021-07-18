@@ -1,7 +1,8 @@
 mod commands;
 mod constantes;
+mod macros;
 
-use commands::{ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP};
+use commands::{general::HELP, ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP};
 use std::{collections::HashSet, fs::File, io::prelude::*};
 
 extern crate serenity;
@@ -68,6 +69,7 @@ fn main() {
     client.with_framework(
         StandardFramework::new()
             .configure(|c| c.prefix(constantes::PREFIX).owners(owners)) // set the bot's prefix
+            .help(&HELP)
             .group(&GENERAL_GROUP)
             .group(&EMOJI_GROUP)
             .group(&ADMINS_GROUP),

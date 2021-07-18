@@ -1,7 +1,6 @@
-use crate::constantes;
+// use crate::constantes;
 
 extern crate serenity;
-
 use serenity::{
     // async_trait,
     // client::bridge::gateway::ShardManager,
@@ -13,32 +12,37 @@ use serenity::{
     //     HelpOptions, StandardFramework,
     // },
     framework::standard::{
-        macros::{command, group},
-        CommandResult,
+        help_commands,
+        macros::{command, group, help},
+        Args, CommandGroup, CommandResult, HelpOptions,
     },
-    model::channel::Message,
+    model::{channel::Message, id::UserId},
     prelude::*,
 };
+use std::collections::HashSet;
+
+#[help]
+fn help(
+    context: &mut Context,
+    msg: &Message,
+    args: Args,
+    help_options: &'static HelpOptions,
+    group: &[&'static CommandGroup],
+    owners: HashSet<UserId>,
+) -> CommandResult {
+    help_commands::with_embeds(context, msg, args, help_options, group, owners)
+}
 
 #[group]
-#[commands(ping, help, hi)]
-
+#[description = "Some general commands\n"]
+#[commands(ping, hi)]
 struct General;
 
 #[command]
-#[description = "says pong on \"§ping\"\n"]
+#[description = "Says pong on \"§ping\"\n"]
 #[help_available]
 fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
     msg.reply(&ctx, "Pong§§§")?;
-    Ok(())
-}
-
-//TODO:  change the help message
-#[command]
-#[description = "Help command\n"]
-#[aliases(Help)]
-fn help(ctx: &mut Context, msg: &Message) -> CommandResult {
-    msg.reply(&ctx, constantes::HELP_MESSAGE)?;
     Ok(())
 }
 

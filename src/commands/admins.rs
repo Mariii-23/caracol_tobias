@@ -8,9 +8,12 @@ use serenity::{
     prelude::*,
 };
 
+use crate::cmd_ctx_msg_args;
+
 #[group]
 #[owners_only]
-#[commands(say)]
+#[commands(say, say2)]
+#[description = "Admin commands\n"]
 struct Admins;
 
 #[command]
@@ -20,4 +23,11 @@ struct Admins;
 fn say(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     msg.channel_id.say(&ctx, args.rest())?;
     Ok(())
+}
+
+//TODO this dont work as well
+// and i dont know why
+cmd_ctx_msg_args! { say2,
+    // msg.channel_id.say(&ctx, args.rest())?;
+    println!("RIP2");
 }

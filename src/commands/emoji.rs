@@ -1,5 +1,7 @@
 extern crate serenity;
 
+use crate::cmd_ctx_msg;
+
 use serenity::{
     framework::standard::{
         macros::{command, group},
@@ -10,7 +12,7 @@ use serenity::{
 };
 
 #[group]
-#[commands(bird, diamond)]
+#[commands(bird, diamond, bird2)]
 #[description = "Sends out an emoji in the chat\n"]
 #[default_command(diamond)]
 #[prefixes("e", "em", "emoji")]
@@ -20,6 +22,12 @@ struct Emoji;
 fn bird(ctx: &mut Context, msg: &Message) -> CommandResult {
     msg.channel_id.say(&ctx, "🐦")?;
     Ok(())
+}
+
+//TODO this dont work and i dont know why
+cmd_ctx_msg! { bird2,
+    // msg.channel_id.say(&ctx, "🐦2")?;
+    println!("RIP");
 }
 
 #[command]
