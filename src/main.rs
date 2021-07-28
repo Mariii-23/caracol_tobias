@@ -1,44 +1,26 @@
-mod commands;
-mod constantes;
-mod macros;
-
-use commands::{general::HELP, ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP};
+use std::env;
 use std::{collections::HashSet, fs::File, io::prelude::*};
+
+
+mod constantes;
+mod modules;
+use modules::events;
+mod commands;
+use commands::{general::HELP,  ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP};
 
 extern crate serenity;
 use serenity::{
     framework::standard::StandardFramework,
-    model::channel::{
-        Reaction,
-        ReactionType::{Custom, Unicode},
-    },
-    model::gateway::Ready,
     prelude::*,
+http::Http,
 };
 
-struct Handler;
+// use serenity::{
+//     client::bridge::gateway::GatewayIntents,  http::Http, prelude::*,
+// };
+use tracing::{error, instrument};
+use tracing_subscriber;
 
-impl EventHandler for Handler {
-    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-        println!(
-            "{} left a reaction {}",
-            reaction.user(&ctx.http).unwrap().name,
-            match reaction.emoji {
-                Custom {
-                    animated: _,
-                    id: _,
-                    name,
-                } => name.unwrap(),
-                Unicode(uni) => uni,
-                _ => String::new(),
-            }
-        );
-    }
-
-    fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is ready", ready.user.name);
-    }
-}
 
 fn read_file_and_get_token() -> String {
     // let mut file = File::open(".env").expect("Error reading file");
@@ -49,34 +31,68 @@ fn read_file_and_get_token() -> String {
     token
 }
 
-fn main() {
+#[tokio::main]
+#[instrument]
+ async fn main() {
     // Configure the client with your Discord bot token in the environment.
-    let token = read_file_and_get_token();
-    let mut client = Client::new(&token, Handler).expect("Error creating client");
+     kankyo::load(false).expect("Failed to load .env file");
+     tracing_subscriber::fmt::init();
 
-    // We will fetch our bot's owners
-    let owners = match client.cache_and_http.http.get_current_application_info() {
+     let token = env::var("DISCORD_TOKEN").expect("No token found!");
+     // let prefix = env::var("PREFIX").expect("No prefix found!");
+    // let database_credentials = env::var("DATABASE_URL").expect("No database credentials found!");
+    // let lastfm_api_key = env::var("LASTFM_TOKEN").expect("No lastfm api key found!");
+    // let lastfm_secret = env::var("LASTFM_SECRET").expect("No lastfm secret found!");
+
+    let http = Http::new_with_token(&token);
+
+ //    let token = read_file_and_get_token();
+ // let http = Http::new_with_token(&token);
+
+    // let mut client = Client::new(&token)
+    //     .event_handler(Handler)
+    //     .await
+    //     .expect("Err creating client");
+
+    // if let Err(why) = client.start().await {
+    //     println!("Client error: {:?}", why);
+    // }
+
+// We will fetch your bot's owners and id
+    let (owners, bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owners = HashSet::new();
             owners.insert(info.owner.id);
 
-            owners
+            (owners, info.id)
         }
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
-
     // Init commands
-    client.with_framework(
-        StandardFramework::new()
-            .configure(|c| c.prefix(constantes::PREFIX).owners(owners)) // set the bot's prefix
-            .help(&HELP)
-            .group(&GENERAL_GROUP)
+let framework = StandardFramework::new()
+        .configure(|c| {
+            c.owners(owners)
+                .prefix(constantes::PREFIX)
+                .on_mention(Some(bot_id))
+                .case_insensitivity(true)
+        })
+        .after(events::after_hook)
+        .before(events::before_hook)
+        .on_dispatch_error(events::dispatch_error)
+        .help(&HELP)
+        .group(&GENERAL_GROUP)
             .group(&EMOJI_GROUP)
-            .group(&ADMINS_GROUP),
-    );
+            .group(&ADMINS_GROUP)
+         ;
+
+ let mut client = Client::builder(&token)
+        .framework(framework)
+        .event_handler(events::Handler)
+        // .intents(GatewayIntents::all())
+        .await
+        .expect("Error creating client!");
 
     // Start
-    if let Err(msg) = client.start() {
-        println!("Error: {:?}", msg);
-    }
-}
+     if let Err(why) = client.start_autosharded().await {
+        error!("An error occurred while running the client: {:?}", why);
+    }}

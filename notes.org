@@ -1,4 +1,0 @@
-#+TITLE: Notes
-
-Some dependencies:
-+ nmp install dotenv

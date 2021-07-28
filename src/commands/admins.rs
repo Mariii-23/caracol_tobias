@@ -7,28 +7,42 @@ use serenity::{
     model::channel::Message,
     prelude::*,
 };
+use sqlx::Row;
+use serenity::model::prelude::*;
+use serenity::prelude::*;
 
-use crate::cmd_ctx_msg_args;
+// use crate::cmd_ctx_msg_args;
 
 #[group]
 #[owners_only]
-#[commands(say, say2)]
+#[commands(say)]
 #[description = "Admin only\n"]
+#[help_available]
 // #[help_available(false)]
 struct Admins;
 
 #[command]
 #[description = "The bot will repeat what you given\n"]
 #[example = " Hello World\nBot: Hello World\n"]
-#[help_available]
-fn say(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    msg.channel_id.say(&ctx, args.rest())?;
+async fn say(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    msg.channel_id.say(&ctx, args.rest()).await?;
     Ok(())
 }
 
-//TODO this dont work as well
-// and i dont know why
-cmd_ctx_msg_args! { say2,
-    // msg.channel_id.say(&ctx, args.rest())?;
-    println!("RIP2");
-}
+// #[command]
+// #[owners_only]
+// #[description = "Gently terminates the bot process"]
+// async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
+//     let data = ctx.data.read().await;
+
+//     if let Some(manager) = data.get::<ShardManagerContainer>() {
+//         msg.channel_id.say(&ctx, "Goodbye!").await?;
+//         manager.lock().await.shutdown_all().await;
+//     } else {
+//         msg.channel_id
+//             .say(&ctx, "There was a problem getting the shard manager")
+//             .await?;
+//     }
+
+//     Ok(())
+// }

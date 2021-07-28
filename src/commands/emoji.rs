@@ -1,7 +1,5 @@
 extern crate serenity;
 
-use crate::cmd_ctx_msg;
-
 use serenity::{
     framework::standard::{
         macros::{command, group},
@@ -12,28 +10,25 @@ use serenity::{
 };
 
 #[group]
-#[commands(bird, diamond, bird2)]
+//TODO: help isnt working
+#[help_available]
+#[commands(bird, diamond)]
 #[description = "Sends out an emoji in the chat\n"]
 #[default_command(diamond)]
 #[prefixes("e", "em", "emoji")]
+// #[required_permissions("MANAGE_EMOJIS")]
 struct Emoji;
 
 #[command]
 #[description = "Sends out an bird emoji in the chat\n"]
-fn bird(ctx: &mut Context, msg: &Message) -> CommandResult {
-    msg.channel_id.say(&ctx, "🐦")?;
+async fn bird(ctx: &Context, msg: &Message) -> CommandResult {
+    msg.channel_id.say(&ctx, "🐦").await?;
     Ok(())
-}
-
-//TODO this dont work and i dont know why
-cmd_ctx_msg! { bird2,
-    // msg.channel_id.say(&ctx, "🐦2")?;
-    println!("RIP");
 }
 
 #[command]
 #[description = "Just an amazing diamond\n"]
-fn diamond(ctx: &mut Context, msg: &Message) -> CommandResult {
-    msg.channel_id.say(&ctx, "💎")?;
+async fn diamond(ctx: &Context, msg: &Message) -> CommandResult {
+    msg.channel_id.say(&ctx, "💎").await?;
     Ok(())
 }
