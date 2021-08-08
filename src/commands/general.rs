@@ -101,8 +101,9 @@ struct General;
     let msg = msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| {
             e.title("`§23`");
-            e.description("A bot with random and probably nonsensical features.\n");
+            e.description("Hellooooo!!!\nMy name is Caracol Tobias, and I'm a \"carangueijo\"(crab)\nA bot with random and probably nonsensical features.\n");
 
+            //TODO: This dont work
             // e.thumbnail(bot_icon);
 
             // false = not inline
