@@ -34,7 +34,7 @@ async fn help(
 }
 
 #[group]
-#[commands(ping, hi, about, embed, poll)]
+#[commands(ping, hi, about, embed, poll,which)]
 #[description = "Some general commands\n"]
 struct General;
 
@@ -77,7 +77,7 @@ struct General;
 
 #[command]
 #[description = "Bot will reply with pretty embed containing title and description of bot"]
- async fn about(ctx: & Context, msg: &Message) -> CommandResult {
+async fn about(ctx: & Context, msg: &Message) -> CommandResult {
     // Obtain Bot's profile pic: cache -> current info -> bot user -> bot icon
     // let cache_http = &ctx.http;
     // let current_info = cache_http.get_current_application_info();
@@ -245,3 +245,53 @@ struct General;
 
     Ok(())
  }
+
+
+// use std::fs::File;
+// use std::io::{self, prelude::*, BufReader};
+
+#[command]
+#[description("I will choose one of your given lines\nBetween the given lines it is necessary to have a enter\n")]
+#[usage = "\noption 1\noption 2\n..."]
+#[example = "\nFunny\nGreat\nCool"]
+#[min_args(1)]
+//TODO add feature to give a file and choose one random line of that file.
+//TODO you can give a number and the bot will given x random lines
+async fn which(ctx: &Context, msg: &Message) -> CommandResult {
+    // let file_name = msg.content[2..].split_once(" ").unwrap();
+    // if std::path::Path::new(&file_name.1).exists() {
+    //     let file = File::open(&file_name.1)?;
+    //     let reader = BufReader::new(file);
+
+    //     for line in reader.lines() {
+    //         // println!("{}", line?);
+    //         msg.channel_id.say(&ctx,line?);
+    //     }
+
+    // } else {
+    //     msg.reply(&ctx, "The path given dont exist.").await?;
+    // }
+
+    let args = msg.content[2..].split_once("\n").unwrap();
+    let args = args.1.split("\n");
+
+    let mut count_options: usize = 0;
+    let mut v: Vec<String> = Vec::new();
+    for s in args {
+        count_options+=1;
+        v.push(s.to_string());
+    }
+
+    extern crate rand;
+    use rand::Rng;
+    let random_number = rand::thread_rng().gen_range(1,&count_options);
+
+    match v.get(random_number) {
+        Some(elem) => {
+            let string = format!("I choose -> {}\n", elem);
+            msg.reply(&ctx, string).await?;
+        },
+        None => { msg.reply(&ctx, "Something happen\nError\n").await?;},
+    }
+    Ok(())
+}

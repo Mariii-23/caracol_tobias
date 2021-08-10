@@ -156,6 +156,7 @@ dependencies = [
  "kankyo",
  "md5",
  "quick-error",
+ "rand 0.7.3",
  "reqwest",
  "serde",
  "serde-aux",
