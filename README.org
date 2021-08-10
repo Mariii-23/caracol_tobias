@@ -1,3 +1,21 @@
 #+TITLE: HELLOOOOOOOO
 
-Discord bot written in async rust usinf serenity.
+
+* Introduction
+This is a simple Discord bot written in async rust using serenity.
+Some topic:
+- [[Installing]]
+- [[Configure the build settings:][Configure the build settings]]
+- [[Run]]
+
+*  Installing
+- rust and cargo is required
+
+* Configure the build settings:
+The progamme needs a file named ".env" with the token of the bot.
+Here we have a example of a file [[file:.envExample][.env]]
+
+* Run
+#+begin_src bash
+cargo run
+#+end_src
