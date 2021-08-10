@@ -1,35 +1,27 @@
-use std::env;
-use std::{collections::HashSet, fs::File, io::prelude::*};
-
-
+extern crate serenity;
 mod constantes;
 mod modules;
-use modules::events;
 mod commands;
-use commands::{general::HELP,  ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP};
 
-extern crate serenity;
+use modules::events;
+use commands::{general::HELP, EXAMPLES_GROUP, ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP};
+
+use std::{env,collections::HashSet};
 use serenity::{
     framework::standard::StandardFramework,
     prelude::*,
-http::Http,
+    http::Http,
 };
 
-// use serenity::{
-//     client::bridge::gateway::GatewayIntents,  http::Http, prelude::*,
-// };
 use tracing::{error, instrument};
-use tracing_subscriber;
 
-
-fn read_file_and_get_token() -> String {
-    // let mut file = File::open(".env").expect("Error reading file");
-    let mut file = File::open(".env").unwrap();
-    let mut token = String::new();
-    file.read_to_string(&mut token)
-        .expect("Token file not found");
-    token
-}
+// fn read_file_and_get_token() -> String {
+//     let mut file = File::open(".env").unwrap();
+//     let mut token = String::new();
+//     file.read_to_string(&mut token)
+//         .expect("Token file not found");
+//     token
+// }
 
 #[tokio::main]
 #[instrument]
@@ -46,8 +38,8 @@ fn read_file_and_get_token() -> String {
 
     let http = Http::new_with_token(&token);
 
- //    let token = read_file_and_get_token();
- // let http = Http::new_with_token(&token);
+    //    let token = read_file_and_get_token();
+    // let http = Http::new_with_token(&token);
 
     // let mut client = Client::new(&token)
     //     .event_handler(Handler)
@@ -58,8 +50,8 @@ fn read_file_and_get_token() -> String {
     //     println!("Client error: {:?}", why);
     // }
 
-// We will fetch your bot's owners and id
-    let (owners, bot_id) = match http.get_current_application_info().await {
+     // We will fetch your bot's owners and id
+     let (owners, bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owners = HashSet::new();
             owners.insert(info.owner.id);
@@ -68,8 +60,9 @@ fn read_file_and_get_token() -> String {
         }
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
-    // Init commands
-let framework = StandardFramework::new()
+
+     // Init commands
+     let framework = StandardFramework::new()
         .configure(|c| {
             c.owners(owners)
                 .prefix(constantes::PREFIX)
@@ -81,18 +74,20 @@ let framework = StandardFramework::new()
         .on_dispatch_error(events::dispatch_error)
         .help(&HELP)
         .group(&GENERAL_GROUP)
-            .group(&EMOJI_GROUP)
-            .group(&ADMINS_GROUP)
+        .group(&EMOJI_GROUP)
+        .group(&ADMINS_GROUP)
+        .group(&EXAMPLES_GROUP)
          ;
 
- let mut client = Client::builder(&token)
+     let mut client = Client::builder(&token)
         .framework(framework)
         .event_handler(events::Handler)
         // .intents(GatewayIntents::all())
         .await
         .expect("Error creating client!");
 
-    // Start
+     // Start
      if let Err(why) = client.start_autosharded().await {
         error!("An error occurred while running the client: {:?}", why);
-    }}
+     }
+}

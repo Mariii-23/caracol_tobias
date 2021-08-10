@@ -15,7 +15,7 @@ use serenity::{
 #[commands(bird, diamond)]
 #[description = "Sends out an emoji in the chat\n"]
 #[default_command(diamond)]
-#[prefixes("e", "em", "emoji")]
+#[prefixes("em", "emoji")]
 // #[required_permissions("MANAGE_EMOJIS")]
 struct Emoji;
 

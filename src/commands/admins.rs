@@ -7,9 +7,10 @@ use serenity::{
     model::channel::Message,
     prelude::*,
 };
-use sqlx::Row;
-use serenity::model::prelude::*;
-use serenity::prelude::*;
+
+// use sqlx::Row;
+// use serenity::model::prelude::*;
+// use serenity::prelude::*;
 
 // use crate::cmd_ctx_msg_args;
 
@@ -30,7 +31,6 @@ async fn say(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 }
 
 // #[command]
-// #[owners_only]
 // #[description = "Gently terminates the bot process"]
 // async fn quit(ctx: &Context, msg: &Message) -> CommandResult {
 //     let data = ctx.data.read().await;
@@ -46,3 +46,4 @@ async fn say(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 //     Ok(())
 // }
+
