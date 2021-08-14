@@ -1,15 +1,11 @@
 extern crate serenity;
 
-use serenity::{
-    framework::standard::{
+use serenity::{framework::standard::{
         help_commands,
         macros::{ command, group, help},
         Args,
         CommandGroup, CommandResult, HelpOptions,
-    },
-    model::{channel::Message, id::UserId},
-    prelude::*,
-};
+    }, model::{channel::Message, id::UserId, prelude::CurrentUser}, prelude::*};
 
 // use serenity::model::application::CurrentApplicationInfo;
 use std::collections::HashSet;
@@ -181,7 +177,7 @@ async fn about(ctx: & Context, msg: &Message) -> CommandResult {
 // }
 
 #[command]
-#[description = "Create a poll,with or without options\n"]
+#[description = "Create a poll, with or without options\n"]
 #[usage = "title ; options"]
 #[example = "Cinema tonight?"]
 #[example = "Choose one options ; Funny;Great;Cool"]
