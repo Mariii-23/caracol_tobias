@@ -18,7 +18,6 @@ use crate::modules::pagination;
 
 use serenity::{
     builder::CreateMessage,
-    http::AttachmentType,
     framework::standard::{
         macros::{command, group},
          CommandResult,
@@ -40,6 +39,64 @@ struct Movie {
     title: String,
     people: Vec<String>,
     link_imdb: String
+}
+
+//Passar o ficheiro para um vetor de struct (Está pouco otimizada)
+fn file_to_struct() -> Vec<Movie>{
+    //Abrir o ficheiro e passar tudo para um BuffReader (é mais rapido do que passar para string)
+    let f = File::open("files/movies.csv").expect("Erro ao abrir o ficheiro");
+    let mut buf_reader = BufReader::new(f);
+    let mut contents = String::new();
+    let mut movies = Vec::new();
+    //Agora passar o BuffReader para string
+    buf_reader.read_to_string(&mut contents).unwrap();
+    if contents.len() == 0 {
+        return movies;
+    }
+    //Dividir o ficheiro em um vetor em que cada elemento é uma linha do ficheiro
+    let file: Vec<&str> = contents.split("\n").collect();
+    for f in &file {
+        if f.len() == 0 {
+            return movies;
+        }
+        let aux: Vec<&str> = f.split(";").collect();
+        let p: Vec<&str> = aux[1].split(",").collect();
+        let mut aux2 = Vec::new();
+        for a in p {
+            aux2.push(a.to_string());
+        }
+        let m = Movie {
+            title: aux[0].to_string(),
+            people: aux2,
+            link_imdb: aux[2].to_string()
+        };
+        movies.push(m);
+    }
+    movies
+}
+
+fn struct_to_file(movies: Vec<Movie>) {
+    let mut file = match File::create("files/movies.csv"){
+        Ok(file) => file,
+        Err(_) => panic!("Problema a abrir o ficheiro!"),
+    };
+
+    for i in movies {
+        let mut line = String::new();
+        line.push_str(i.title.as_str().trim());
+        line.push_str(";");
+        for (index, j) in i.people.iter().enumerate() {
+            line.push_str(j.as_str().trim());
+            if index != i.people.len() - 1 {
+                line.push_str(",");
+            }
+        }
+        line.push_str(";");
+        line.push_str(i.link_imdb.as_str().trim());
+        file.write(line.as_bytes()).expect("Erro ao ecrever no ficheiro!");
+        file.write("\n".as_bytes()).expect("Erro no \n?");
+    }
+
 }
 
 #[command]
@@ -125,63 +182,6 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-//Passar o ficheiro para um vetor de struct (Está pouco otimizada)
-fn file_to_struct() -> Vec<Movie>{
-    //Abrir o ficheiro e passar tudo para um BuffReader (é mais rapido do que passar para string)
-    let f = File::open("files/movies.csv").expect("Erro ao abrir o ficheiro");
-    let mut buf_reader = BufReader::new(f);
-    let mut contents = String::new();
-    let mut movies = Vec::new();
-    //Agora passar o BuffReader para string
-    buf_reader.read_to_string(&mut contents).unwrap();
-    if contents.len() == 0 {
-        return movies;
-    }
-    //Dividir o ficheiro em um vetor em que cada elemento é uma linha do ficheiro
-    let file: Vec<&str> = contents.split("\n").collect();
-    for f in &file {
-        if f.len() == 0 {
-            return movies;
-        }
-        let aux: Vec<&str> = f.split(";").collect();
-        let p: Vec<&str> = aux[1].split(",").collect();
-        let mut aux2 = Vec::new();
-        for a in p {
-            aux2.push(a.to_string());
-        }
-        let m = Movie {
-            title: aux[0].to_string(),
-            people: aux2,
-            link_imdb: aux[2].to_string()
-        };
-        movies.push(m);
-    }
-    movies
-} 
-
-fn struct_to_file(movies: Vec<Movie>) {
-    let mut file = match File::create("files/movies.csv"){
-        Ok(file) => file,
-        Err(_) => panic!("Problema a abrir o ficheiro!"),
-    };
-
-    for i in movies {
-        let mut line = String::new(); 
-        line.push_str(i.title.as_str().trim());
-        line.push_str(";");
-        for (index, j) in i.people.iter().enumerate() {
-            line.push_str(j.as_str().trim());
-            if index != i.people.len() - 1 {
-                line.push_str(",");
-            }
-        }
-        line.push_str(";");
-        line.push_str(i.link_imdb.as_str().trim());
-        file.write(line.as_bytes()).expect("Erro ao ecrever no ficheiro!");
-        file.write("\n".as_bytes()).expect("Erro no \n?");
-    }
-
-}
 
 
 
@@ -304,25 +304,29 @@ async fn remove_person (ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
     let movies = file_to_struct();
-
-    let mut page_one = CreateMessage::default();
     let mut pages = Vec::new();
 
     for movie in movies {
-        let string = format!("{}\nPersons:", movie.link_imdb);
+        let mut persons = String::new();
+        for person in &movie.people {
+            let string = format!("{}\n", person);
+            persons.push_str(&string);
+        }
+
         let mut page = CreateMessage::default();
-        page.content(movie.title).embed(|e| {
-            e.description(string);
+        page.content("MOVIES").embed(|e| {
+            e.title(&movie.title);
+            if (!movie.link_imdb.eq("N/A")){
+                e.description(&movie.link_imdb);
+            }
+            e.field("Persons:",&persons,true);
          e
         });
         pages.push(page);
     }
 
-    // let pages = [page_one, page_two];
-
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
-
     // Runs the menu and returns optional `Message` used to display the menu.
     let _ = menu.run().await?;
 
