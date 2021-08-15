@@ -29,8 +29,8 @@ use serenity::{
 use serenity_utils::menu::Menu;
 
 #[group]
-#[commands(add, remove, add_person, remove_person)]
-#[prefixes("movie")]
+#[commands(add, remove, add_person, remove_person,show)]
+#[prefixes("movie","mv")]
 #[description("movie stuff")]
 
 struct Movies;
@@ -43,6 +43,10 @@ struct Movie {
 }
 
 #[command]
+#[description("Add a movie to the list")]
+#[usage="'name'; persons; imdb's link"]
+#[example="'name'"]
+#[example="'name'; person1, person2 ; imdb's link"]
 async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     //dividir a mensagem de quem quer adicionar um filme por ";" (O divisor pode ser mudado depois)
     let parts: Vec<&str> = msg.content.split(";").collect();
@@ -182,6 +186,9 @@ fn struct_to_file(movies: Vec<Movie>) {
 
 
 #[command]
+#[description("Remove a movie to the list")]
+#[usage="'name'"]
+#[example="'Aladin'"]
 async fn remove (ctx: &Context, msg: &Message) -> CommandResult {
     let title: Vec<&str> = msg.content.split("'").collect();
     if title.len() != 3 || title[1].is_empty() {
@@ -206,6 +213,9 @@ async fn remove (ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+#[description("Add a person to a movie")]
+#[usage="'name'; @person"]
+#[example="'Aladin'; @23"]
 async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
     let parts: Vec<&str> = msg.content.split(";").collect();
     if parts.len() != 2 {
@@ -245,6 +255,9 @@ async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+#[description("Remove a person to a movie")]
+#[usage="'name'; @person"]
+#[example="'Aladin'; @23"]
 async fn remove_person (ctx: &Context, msg: &Message) -> CommandResult {
     let parts: Vec<&str> = msg.content.split(";").collect();
     if parts.len() != 2 {
@@ -284,5 +297,34 @@ async fn remove_person (ctx: &Context, msg: &Message) -> CommandResult {
         }
     }
     msg.channel_id.say(&ctx.http, "Erro! O filme não foi encontrado").await?;
+    Ok(())
+}
+
+
+#[command]
+async fn show(ctx: &Context, msg: &Message) -> CommandResult {
+    let movies = file_to_struct();
+
+    let mut page_one = CreateMessage::default();
+    let mut pages = Vec::new();
+
+    for movie in movies {
+        let string = format!("{}\nPersons:", movie.link_imdb);
+        let mut page = CreateMessage::default();
+        page.content(movie.title).embed(|e| {
+            e.description(string);
+         e
+        });
+        pages.push(page);
+    }
+
+    // let pages = [page_one, page_two];
+
+    // Creates a new menu.
+    let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
+
+    // Runs the menu and returns optional `Message` used to display the menu.
+    let _ = menu.run().await?;
+
     Ok(())
 }
