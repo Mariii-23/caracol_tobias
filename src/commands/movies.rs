@@ -367,27 +367,25 @@ async fn id_to_nick(ctx: &Context, msg: &Message, person: &String) -> String{
 async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     //ir ao voice channel buscar os ids
     let mut people_vc: Vec<String> = Vec::new();
-    let guild = msg.guild_id.unwrap();
-
-    let channels = guild.channels(&ctx.http).await?;
-    for (_, guild_channel) in channels {
-        match guild_channel.kind {
-            ChannelType::Voice => {
-                let ids = guild_channel.members(&ctx.cache).await?;
-                for i in ids {
-                    if !i.user.bot {
-                        people_vc.push(i.user.id.0.to_string());
-                    }
+    let guild = msg.guild(&ctx.cache).await.expect("something");
+    match guild.voice_states.get(&msg.author.id) {
+        Some(s) => {
+            let vc_id = s.channel_id.unwrap();
+            let guild = msg.guild_id.unwrap().channels(&ctx.http).await?;
+            let guild_channel = guild.get(&vc_id).unwrap();
+            let ids = guild_channel.members(&ctx.cache).await?;
+            for i in ids {
+                if !i.user.bot {
+                    people_vc.push(i.user.id.0.to_string());
                 }
-                println!("{:?}", people_vc);
             }
-            _ => (),
         }
-    }
-    if people_vc.is_empty() {
-        msg.channel_id.say(&ctx.http, "Erro! Não há pessoas em nenhum voice channel").await?;
-        return Ok(());
-    }
+        _ => {
+            msg.channel_id.say(&ctx.http, "Erro! Não há pessoas em nenhum voice channel").await?;
+            return Ok(());
+        }
+    };
+    
 
     //Ir buscar os filmes ao file
     let movies = file_to_struct(msg);
