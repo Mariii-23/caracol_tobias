@@ -337,7 +337,7 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
             if !movie.link_imdb.eq(""){
                 e.description(&movie.link_imdb);
             }
-            e.field("Persons:",&persons,true);
+            e.field("People:",&persons,true);
          e
         });
         pages.push(page);
@@ -368,6 +368,7 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     //ir ao voice channel buscar os ids
     let mut people_vc: Vec<String> = Vec::new();
     let guild = msg.guild_id.unwrap();
+
     let channels = guild.channels(&ctx.http).await?;
     for (_, guild_channel) in channels {
         match guild_channel.kind {
@@ -393,13 +394,44 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
 
     //Ver que filmes podem ser vistos em função  das pessoas na chamada
     let mut ok_movies: Vec<Movie> = Vec::new();
-    for movie in movies {
-        let people = &movie.people;
+    for movie_aux in movies {
+        let people = &movie_aux.people;
         if people.iter().all(|item| people_vc.contains(item)) {
-            ok_movies.push(movie);
+            ok_movies.push(movie_aux);
         }
     }
 
-    //Agora tenho um Vec<Movie> é só fazer show deles (teoricamente)
+    //Agora tenho um Vec<Movie> é só fazer show deles (teoricamente let mut pages = Vec::new();
+
+    let mut pages = Vec::new();
+    for movie in ok_movies {
+        let mut persons = String::new();
+        for person in &movie.people {
+            //Passar o id para um int
+            let person: u64 = person.parse().unwrap();
+            println!("{}", person);
+            //Passar agora para um membro (struct do serenety)
+            let person = msg.guild_id.unwrap().member(&ctx.http, person).await?;
+            println!("{:?}",person);
+            let string = format!("{}\n", person.user.name);
+            persons.push_str(&string);
+        }
+
+        let mut page = CreateMessage::default();
+        page.content("MOVIES").embed(|e| {
+            e.title(&movie.title);
+            if !movie.link_imdb.eq(""){
+                e.description(&movie.link_imdb);
+            }
+            e.field("People:",&persons,true);
+            e
+        });
+        pages.push(page);
+    }
+
+    // Creates a new menu.
+    let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
+    // Runs the menu and returns optional `Message` used to display the menu.
+    let _ = menu.run().await?;
     Ok(())
 }
