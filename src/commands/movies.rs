@@ -431,6 +431,7 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     //Ver que filmes podem ser vistos em função  das pessoas na chamada
     let mut ok_movies: Vec<Movie> = Vec::new();
     for movie_aux in movies {
+
         let people = &movie_aux.people;
         if people.iter().all(|item| people_vc.contains(item)) {
             if msg.content.contains("exact") {
@@ -448,9 +449,11 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
 
     //Agora tenho um Vec<Movie> é só fazer show deles (teoricamente let mut pages = Vec::new();
 
-
+    let mut all_titles = String::new();
     let mut pages = Vec::new();
     for movie in ok_movies {
+        all_titles.push_str(&movie.title);
+        all_titles = all_titles + "\n";
         let mut persons = String::new();
         for person in &movie.people {
             //Passar o id para um int
@@ -474,6 +477,18 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
         });
         pages.push(page);
     }
+
+    let msg1 = msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.field("All movies", all_titles, false);
+
+                e
+            });
+            m
+    });
+    msg1.await.unwrap();
 
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
