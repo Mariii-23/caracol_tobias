@@ -20,7 +20,7 @@
 
 extern crate serenity;
 
-use std::{fs::File, io::{BufRead, BufReader, Read, Write}, path::Path};
+use std::{cmp::Ordering, fs::File, io::{BufRead, BufReader, Read, Write}, path::Path};
 use crate::modules::pagination;
 
 use serenity::{builder::CreateMessage, cache::Cache, framework::standard::{
@@ -36,12 +36,32 @@ use serenity_utils::menu::Menu;
 
 struct Movies;
 
+#[derive(Eq)]
 //struct para cada linha do ficheiro (provavelmente vai ter que ser muito alterada)
 struct Movie {
     title: String,
     people: Vec<String>,
     link_imdb: String
 }
+
+impl Ord for Movie {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.people.len().cmp(&other.people.len())
+    }
+}
+
+impl PartialOrd for Movie {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Movie {
+    fn eq(&self, other: &Self) -> bool {
+        (self.people.len()) == (other.people.len())
+    }
+}
+
 
 //Passar o ficheiro para um vetor de struct (Está pouco otimizada)
 fn file_to_struct(msg: &Message) -> Vec<Movie>{
@@ -363,7 +383,7 @@ async fn id_to_nick(ctx: &Context, msg: &Message, person: &String) -> String{
 
 
 #[command]
-#[description("Shows a list of movies that can be seen according to the people in the voice channels")]
+#[description("Shows a list of movies that can be seen according to the people in the voice channel")]
 async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     //ir ao voice channel buscar os ids
     let mut people_vc: Vec<String> = Vec::new();
@@ -385,6 +405,7 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
             return Ok(());
         }
     };
+    println!("people_vc: {:?}", people_vc);
     
 
     //Ir buscar os filmes ao file
@@ -395,9 +416,18 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     for movie_aux in movies {
         let people = &movie_aux.people;
         if people.iter().all(|item| people_vc.contains(item)) {
-            ok_movies.push(movie_aux);
+            if msg.content.contains("exact") {
+                if people.len() == people_vc.len() {
+                    ok_movies.push(movie_aux);
+                }
+            } else {
+                ok_movies.push(movie_aux);
+            }
         }
     }
+
+    //Ordenar os filmes por ordem decrescente do número de pessoas
+    ok_movies.sort_by(|a, b| b.cmp(a));
 
     //Agora tenho um Vec<Movie> é só fazer show deles (teoricamente let mut pages = Vec::new();
 
