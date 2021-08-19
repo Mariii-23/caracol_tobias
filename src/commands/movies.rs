@@ -338,7 +338,12 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
     let movies = file_to_struct(msg);
     let mut pages = Vec::new();
 
+    let mut all_titles = String::new();
+
     for movie in movies {
+        all_titles.push_str(&movie.title);
+        all_titles = all_titles + "\n";
+
         let mut persons = String::new();
         for person in &movie.people {
             //Passar o id para um int
@@ -363,6 +368,18 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
         pages.push(page);
     }
 
+    let msg1 = msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.field("All movies", all_titles, false);
+
+                e
+            });
+            m
+    });
+
+    msg1.await.unwrap();
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
     // Runs the menu and returns optional `Message` used to display the menu.
@@ -430,6 +447,7 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     ok_movies.sort_by(|a, b| b.cmp(a));
 
     //Agora tenho um Vec<Movie> é só fazer show deles (teoricamente let mut pages = Vec::new();
+
 
     let mut pages = Vec::new();
     for movie in ok_movies {

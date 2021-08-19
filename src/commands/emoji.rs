@@ -10,7 +10,6 @@ use serenity::{
 };
 
 #[group]
-//TODO: help isnt working
 #[help_available]
 #[commands(bird, diamond)]
 #[description = "Sends out an emoji in the chat\n"]
