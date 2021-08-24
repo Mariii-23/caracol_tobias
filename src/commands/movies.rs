@@ -29,8 +29,10 @@ use serenity::{builder::CreateMessage, cache::Cache, framework::standard::{
     }, http::{CacheHttp, client::Http}, model::{channel::{ChannelType, Message}, id::UserId}, model::guild::Guild, model::id::GuildId, prelude::*};
 use serenity_utils::menu::Menu;
 
+use omdb::*;
+
 #[group]
-#[commands(add, remove, add_person, remove_person, show, choose_vc)]
+#[commands(add, rm, add_person, rm_person, show, choose_vc)]
 #[prefixes("movie","mv")]
 #[description("movie stuff")]
 
@@ -41,7 +43,8 @@ struct Movies;
 struct Movie {
     title: String,
     people: Vec<String>,
-    link_imdb: String
+    link_imdb: String,
+    imdb_id: String
 }
 
 impl Ord for Movie {
@@ -61,6 +64,25 @@ impl PartialEq for Movie {
         (self.people.len()) == (other.people.len())
     }
 }
+
+const APIKEY: &str = "b9a36ff2"; 
+
+async fn search_by_name(name: String) -> Result<SearchResults, Error> {
+    omdb::search(name).apikey(APIKEY).get().await
+}
+
+async fn movie_with_name(name: String) -> Result<omdb::Movie, Error> {
+    println!("{}{:?}", name, omdb::title(&name).get().await);
+    omdb::title(name).apikey(APIKEY).get().await
+}
+
+async fn movie_with_id(id: String) -> Result<omdb::Movie, Error> {
+    println!("{}{:?}", id, omdb::title(&id).get().await);
+    omdb::imdb_id(id).apikey(APIKEY).get().await
+}
+
+
+
 
 
 //Passar o ficheiro para um vetor de struct (Está pouco otimizada)
@@ -97,10 +119,14 @@ fn file_to_struct(msg: &Message) -> Vec<Movie>{
         for a in p {
             aux2.push(a.to_string());
         }
+        let imdb_id  = aux[2].to_string();
+        let mut link_imdb = String::from("https://www.imdb.com/title/");
+        link_imdb.push_str(imdb_id.as_str());
         let m = Movie {
             title: aux[0].to_string(),
             people: aux2,
-            link_imdb: aux[2].to_string()
+            link_imdb,
+            imdb_id
         };
         movies.push(m);
     }
@@ -129,7 +155,7 @@ fn struct_to_file(movies: Vec<Movie>, msg: &Message) {
             }
         }
         line.push_str(";");
-        line.push_str(i.link_imdb.as_str().trim());
+        line.push_str(i.imdb_id.as_str().trim());
         file.write(line.as_bytes()).expect("Erro ao ecrever no ficheiro!");
         file.write("\n".as_bytes()).expect("Erro no \n?");
     }
@@ -138,29 +164,44 @@ fn struct_to_file(movies: Vec<Movie>, msg: &Message) {
 
 
 #[command]
-#[description("Add a movie to the list")]
-#[usage="'name'; persons; imdb's link"]
-#[example="'name'"]
-#[example="'name'; person1, person2 ; imdb's link"]
+#[description("Add a movie to the list with either name or IMDB id")]
+#[usage="§movie add title"]
+#[example="§movie add Joker"]
+#[example="§movie add tt7286456 @person1 @person2"]
 async fn add (ctx: &Context, msg: &Message) -> CommandResult {
-    //dividir a mensagem de quem quer adicionar um filme por ";" (O divisor pode ser mudado depois)
-    let parts: Vec<&str> = msg.content.split(";").collect();
-    if parts.len() > 3 || parts.len() < 1 {
-        msg.channel_id.say(&ctx.http, "Error! Ivalid number of fields '§movie help' for more information").await?;
-        return Ok(());
-    }
 
     //dividir a 1a string que supostament é o titulo do filme por "'" (Isto torna obrigatório por o titulo do filme entre ')
     //assim supostamente ficamos com um vetor com a string "§movie add" e com outra string que é o titulo do filme
-    let movie: Vec<&str> = parts[0].split("'").collect();
+    let movie = msg.content.replace("§movie add ", "");
+    let movie = msg.content.replace("§mv add ", "");
+    let movie: Vec<&str> = movie.split(" <@").collect();
+    let movie = movie[0];
 
     //verifica se o titulo do filme foi escrito entre '
-    if movie.len() != 3 || movie[1].is_empty() {
+    if movie.len() < 3 {
         msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
 
-    let mut link = String::new();
+    let info = match movie_with_name(movie.to_string()).await {
+        Ok(info) => info,
+        Err(_) => match movie_with_id(movie.to_string()).await {
+            Ok(info) => info,
+            Err(_) => {
+                println!("{}", movie);
+                msg.channel_id.say(&ctx.http, "Error! Movie not found ('§movie help to see examples)").await?;
+                return Ok(());
+            }
+        }
+
+    };
+
+    let title = &info.title;
+    let title = title.to_string();
+    let imdb_id = info.imdb_id;
+    let mut link_imdb = String::from("https://www.imdb.com/title/");
+    link_imdb.push_str(imdb_id.as_str());
+
     //Verifica se foram mencionadas pessoas e guarda o id delas num vetor (também guarda a do autor)
     //Para além disso, também guarda o link
     let mut people = Vec::new();
@@ -172,35 +213,28 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
                 people.push(i.id.to_string());
             }
         }
-        //Se houver pessoas mencionadas e houver link então vão haver 3 campos, logo o link será o terceiro
-        if parts.len() == 3 {
-            link = parts[2].to_string();
-        }
         //Se não houver link vai ficar como N/A
-    }
-
-    else {
-        //Se não houver pessoas mencionadas então o link do imdb será o 2o campo (Se existir)
-        if parts.len() == 2 {
-            link = parts[1].to_string();
-        }
     }
 
 
 
     let mut movies: Vec<Movie> = file_to_struct(msg);
     for f in &movies {
-        if f.title.to_uppercase().eq(&movie[1].to_uppercase()) {
+        println!("Movie title: {}; movie: {}", f.title, title);
+        if f.title.to_uppercase().eq(&title.to_uppercase()) {
             msg.channel_id.say(&ctx.http, "Error! Movie already exists").await?;
             return Ok(());
         }
     }
+    let aux = format!("Movie added susscessfully: {}", &link_imdb);
+
 
     //Agora é adicionar um filme à struct
     let m = Movie{
-        title: movie[1].to_string(),
+        title,
         people,
-        link_imdb: link
+        link_imdb,
+        imdb_id
     };
     movies.push(m);
 
@@ -208,9 +242,8 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     struct_to_file(movies, msg);
 
     //println!("FILES: {:?}", movies);
-    println!("{:?}", parts);
     println!("{:?}", movie);
-    msg.channel_id.say(&ctx.http, "Movie added successfully!").await?;
+    msg.channel_id.say(&ctx.http, aux).await?;
     Ok(())
 }
 
@@ -219,21 +252,28 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[description("Remove a movie to the list")]
-#[usage="'name'"]
-#[example="'Aladin'"]
-async fn remove (ctx: &Context, msg: &Message) -> CommandResult {
-    let title: Vec<&str> = msg.content.split("'").collect();
-    if title.len() != 3 || title[1].is_empty() {
+#[usage="§movie rm"]
+#[example="§movie remove Joker"]
+async fn rm (ctx: &Context, msg: &Message) -> CommandResult {
+    let movie = msg.content.replace("§movie rm ", "");
+    let movie = msg.content.replace("§mv rm ", "");
+    let movie = movie.trim();
+    println!("{}", movie);
+
+
+    //verifica se o titulo do filme foi escrito entre '
+    if movie.len() < 3 {
         msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
+
     let mut movies = file_to_struct(msg);
     if movies.len() == 0 {
         msg.channel_id.say(&ctx.http, "There are no movies to remove").await?;
         return Ok(());
     }
     for (index, m) in movies.iter().enumerate() {
-        if m.title.to_uppercase().eq(&title[1].to_uppercase()) {
+        if m.title.to_uppercase().eq(&movie.to_uppercase()) {
             movies.remove(index);
             struct_to_file(movies, msg);
             msg.channel_id.say(&ctx.http, "Movie removed successfully!").await?;
@@ -246,17 +286,16 @@ async fn remove (ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[description("Add a person to a movie")]
-#[usage="'name'; @person"]
-#[example="'Aladin'; @23"]
+#[usage="§movie add_person title @person"]
+#[example="§movie add_person Joker @person"]
 async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
-    let parts: Vec<&str> = msg.content.split(";").collect();
-    if parts.len() != 2 {
-        msg.channel_id.say(&ctx.http, "Error! Invalid number of fields").await?;
-        return Ok(());
-    }
+    let movie = msg.content.replace("§movie add_person ", "");
+    let movie = msg.content.replace("§mv add_person ", "");
+    let movie: Vec<&str> = movie.split(" <@").collect();
+    let movie = movie[0].trim();
 
-    let title: Vec<&str> = parts[0].split("'").collect();
-    if title.len() != 3 || title[1].is_empty() {
+    //verifica se o titulo do filme foi escrito entre '
+    if movie.len() < 3 {
         msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
@@ -269,7 +308,7 @@ async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
 
     let mut movies = file_to_struct(msg);
     for (index, m) in movies.iter().enumerate() {
-        if m.title.to_uppercase().eq(&title[1].to_uppercase()) {
+        if m.title.to_uppercase().eq(&movie.to_uppercase()) {
             for i in &m.people {
                 if i.eq(&person[0].id.to_string()) {
                     msg.channel_id.say(&ctx.http, "Error! Person already in the movie").await?;
@@ -288,17 +327,17 @@ async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[description("Remove a person from a movie")]
-#[usage="'name'; @person"]
-#[example="'Aladin'; @23"]
-async fn remove_person (ctx: &Context, msg: &Message) -> CommandResult {
-    let parts: Vec<&str> = msg.content.split(";").collect();
-    if parts.len() != 2 {
-        msg.channel_id.say(&ctx.http, "Error! Invalid number of fields").await?;
-        return Ok(());
-    }
+#[usage="§movie remove title @person"]
+#[example="§movie remove Joker @person"]
+async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
+    let movie = msg.content.replace("§movie rm_person ", "");
+    let movie = msg.content.replace("§mv rm_person ", "");
+    let movie: Vec<&str> = movie.split(" <@").collect();
+    let movie = movie[0].trim();
+    println!("{}", movie);
 
-    let title: Vec<&str> = parts[0].split("'").collect();
-    if title.len() != 3 || title[1].is_empty() {
+    //verifica se o titulo do filme foi escrito entre '
+    if movie.len() < 3 {
         msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
@@ -311,7 +350,7 @@ async fn remove_person (ctx: &Context, msg: &Message) -> CommandResult {
 
     let mut movies = file_to_struct(msg);
     for (index, m) in movies.iter().enumerate() {
-        if m.title.to_uppercase().eq(&title[1].to_uppercase()) {
+        if m.title.to_uppercase().eq(&movie.to_uppercase()) {
             for (index2, i) in m.people.iter().enumerate() {
                 if i.eq(&person[0].id.to_string()) {
                     if index2 == 0 || m.people.len() == 1 {
@@ -443,6 +482,12 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
             }
         }
     }
+
+    if ok_movies.is_empty() {
+        msg.channel_id.say(&ctx.http, "Error! There are no movies").await?;
+        return Ok(());
+    }
+
 
     //Ordenar os filmes por ordem decrescente do número de pessoas
     ok_movies.sort_by(|a, b| b.cmp(a));
