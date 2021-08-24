@@ -5,7 +5,7 @@ use serenity::{framework::standard::{
         macros::{ command, group, help},
         Args,
         CommandGroup, CommandResult, HelpOptions,
-    }, model::{channel::Message, id::UserId, prelude::CurrentUser}, prelude::*};
+}, model::{channel::{Message,ReactionType}, id::UserId }, prelude::*};
 
 // use serenity::model::application::CurrentApplicationInfo;
 use std::collections::HashSet;
@@ -161,51 +161,46 @@ async fn about(ctx: & Context, msg: &Message) -> CommandResult {
     Ok(())
  }
 
-// fn create_poll(ctx: &Context, msg: &Message,title :&String, description:&String, counter:usize, other_options: bool) -> Message{
-//     let embed = msg.channel_id.send_message(&ctx, |m| {
-//         m.embed(|e| {
-//             e.title(&title).description(&description).footer(|f| {
-//                 f.icon_url("https://www.clipartkey.com/mpngs/m/203-2037526_diamonds-clipart-blue-diamond-logo-png-hd.png")
-//                     .text("React with one emoji")
-//             })
-//         })
-//     });
-
-//     embed
-//     // let poll = embed.await.unwrap();
-//     // poll
-// }
-
 #[command]
 #[description = "Create a poll, with or without options\n"]
-#[usage = "title ; options"]
-#[example = "Cinema tonight?"]
-#[example = "Choose one options ; Funny;Great;Cool"]
+#[usage = "\"title\" \"options\""]
+#[example = "\"Cinema tonight?\""]
+#[example = "\"Choose one options\" \"Funny\" \"Great\" \"Cool\""]
 #[min_args(1)]
 #[max_args(27)]
- async fn poll(ctx: &Context, msg: &Message) -> CommandResult {
-    let abc: Vec<char> = vec![
-        '🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '🇭', '🇮', '🇯', '🇰', '🇱', '🇲', '🇳', '🇴', '🇵', '🇶', '🇷',
-        '🇸', '🇹', '🇺', '🇻', '🇼', '🇽', '🇾', '🇿',
-    ];
-    let args = msg.content[2..].split_once(" ").unwrap();
-    let mut title = String::from("Poll: ") + args.1;
+ async fn poll(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    // let abc: Vec<char> = vec![
+    //     '🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬', '🇭', '🇮', '🇯', '🇰', '🇱', '🇲', '🇳', '🇴', '🇵', '🇶', '🇷',
+    //     '🇸', '🇹', '🇺', '🇻', '🇼', '🇽', '🇾', '🇿',
+    // ];
 
-    let options = args.1.split(';');
+     let question = args.single_quoted::<String>()?;
+     let answers = args
+         .quoted()
+         .iter::<String>()
+         .filter_map(|x| x.ok())
+         .collect::<Vec<_>>();
+
+    // let args = msg.content[2..].split_once(" ").unwrap();
+    // let mut title = String::from("Poll: ") + args.1;
+    let mut title = String::from("Poll: ") + &question;
+
+    // let options = args.1.split(';');
     let mut description = String::new();
-    let mut count_options: usize = 0;
+    // let mut count_options: usize = 0;
+    let mut count_options: usize = answers.len();
 
-    for s in options {
-        if count_options > 0 && count_options < 27 {
-            if let Some(emote) = abc.get(count_options - 1) {
-                let string = format!("{} -> {}\n", emote, s);
-                description.push_str(&string);
-            }
-        } else {
-            title = String::from("Poll: ") + s;
-        }
-        count_options += 1;
-    }
+     let emojis = (0..count_options)
+         .map(|i| std::char::from_u32('🇦' as u32 + i as u32).expect("Failed to format emoji"))
+         .collect::<Vec<_>>();
+
+     let mut count = 0;
+     for &emoji in &emojis {
+         let option = answers.get(count).unwrap();
+         let string = format!("{} -> {}\n", ReactionType::Unicode(emoji.to_string()), option);
+         description.push_str(&string);
+         count +=1;
+     }
 
     let embed = msg.channel_id.send_message(&ctx, |m| {
         m.embed(|e| {
@@ -218,26 +213,16 @@ async fn about(ctx: & Context, msg: &Message) -> CommandResult {
 
     let poll = embed.await.unwrap();
 
-    if count_options - 1 == 0 {
+    if count_options == 0 {
         poll.react(&ctx, '✅').await?;
         poll.react(&ctx, '❌').await?;
     } else {
-        let mut i: usize = 0;
-        while i < count_options - 1 {
-            if let Some(emote) = abc.get(i) {
-                poll.react(&ctx, *emote).await?;
-            }
-            i += 1;
+        for &emoji in &emojis {
+            poll
+                .react(&ctx.http, ReactionType::Unicode(emoji.to_string()))
+                .await?;
         }
     }
-
-     // msg.reactions;
-
-    // POLL_MESSAGE_used = Some(POLLMESSAGE::build(
-    //     msg.channel_id,
-    //     msg.id,
-    //     msg.content.clone(),
-    // ));
 
     Ok(())
  }

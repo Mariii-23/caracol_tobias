@@ -155,6 +155,7 @@ dependencies = [
  "chrono",
  "kankyo",
  "md5",
+ "omdb",
  "quick-error",
  "rand 0.7.3",
  "reqwest",
@@ -930,6 +931,16 @@ checksum = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
 dependencies = [
  "hermit-abi",
  "libc",
+]
+
+[[package]]
+name = "omdb"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "085b94146da1481df50a13d52da94adce6ea61520a802b9308df86d304457086"
+dependencies = [
+ "reqwest",
+ "serde",
 ]
 
 [[package]]
