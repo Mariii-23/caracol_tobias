@@ -20,7 +20,7 @@
 
 extern crate serenity;
 
-use std::{cmp::Ordering, fs::File, io::{BufRead, BufReader, Read, Write}, path::Path};
+use std::{cmp::Ordering, collections::HashMap, fs::File, io::{BufRead, BufReader, Read, Write}, path::Path};
 use crate::modules::pagination;
 
 use serenity::{builder::CreateMessage, cache::Cache, framework::standard::{
@@ -162,6 +162,15 @@ fn struct_to_file(movies: Vec<Movie>, msg: &Message) {
 
 }
 
+async fn init_hashmap (msg: &Message, ctx: &Context) -> HashMap<String, String> {
+    let mut hash = HashMap::new();
+    let members = msg.guild_id.unwrap().members(&ctx.http, None, None).await.expect("Falha aqui não sei pq");
+    for member in members {
+        hash.insert(member.user.id.to_string(), member.user.name.to_string());
+    }
+    hash
+}
+
 
 #[command]
 #[description("Add a movie to the list with either name or IMDB id")]
@@ -173,7 +182,7 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     //dividir a 1a string que supostament é o titulo do filme por "'" (Isto torna obrigatório por o titulo do filme entre ')
     //assim supostamente ficamos com um vetor com a string "§movie add" e com outra string que é o titulo do filme
     let movie = msg.content.replace("§movie add ", "");
-    let movie = msg.content.replace("§mv add ", "");
+    let movie = movie.replace("§mv add ", "");
     let movie: Vec<&str> = movie.split(" <@").collect();
     let movie = movie[0];
 
@@ -256,7 +265,7 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
 #[example="§movie remove Joker"]
 async fn rm (ctx: &Context, msg: &Message) -> CommandResult {
     let movie = msg.content.replace("§movie rm ", "");
-    let movie = msg.content.replace("§mv rm ", "");
+    let movie = movie.replace("§mv rm ", "");
     let movie = movie.trim();
     println!("{}", movie);
 
@@ -290,7 +299,7 @@ async fn rm (ctx: &Context, msg: &Message) -> CommandResult {
 #[example="§movie add_person Joker @person"]
 async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
     let movie = msg.content.replace("§movie add_person ", "");
-    let movie = msg.content.replace("§mv add_person ", "");
+    let movie = movie.replace("§mv add_person ", "");
     let movie: Vec<&str> = movie.split(" <@").collect();
     let movie = movie[0].trim();
 
@@ -331,7 +340,7 @@ async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
 #[example="§movie remove Joker @person"]
 async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
     let movie = msg.content.replace("§movie rm_person ", "");
-    let movie = msg.content.replace("§mv rm_person ", "");
+    let movie = movie.replace("§mv rm_person ", "");
     let movie: Vec<&str> = movie.split(" <@").collect();
     let movie = movie[0].trim();
     println!("{}", movie);
@@ -374,6 +383,13 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
+    let mut names = init_hashmap(msg, ctx).await;
+    let guild = msg.guild_id.unwrap();//.members(&ctx.http, None, None).await.expect("Falha aqui não sei pq");
+    let members = guild.members(&ctx.http, Some(100), None).await?;
+    for member in members {
+        names.insert(member.user.id.to_string(), member.user.name.to_string());
+    }
+
     let movies = file_to_struct(msg);
     let mut pages = Vec::new();
 
@@ -385,13 +401,8 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
 
         let mut persons = String::new();
         for person in &movie.people {
-            //Passar o id para um int
-            let person: u64 = person.parse().unwrap();
-            println!("{}", person);
-            //Passar agora para um membro (struct do serenety)
-            let person = msg.guild_id.unwrap().member(&ctx.http, person).await?;
-            println!("{:?}",person);
-            let string = format!("{}\n", person.user.name);
+            let name = names.get(person).unwrap();
+            let string = format!("{}\n", name);
             persons.push_str(&string);
         }
 
@@ -441,6 +452,7 @@ async fn id_to_nick(ctx: &Context, msg: &Message, person: &String) -> String{
 #[command]
 #[description("Shows a list of movies that can be seen according to the people in the voice channel")]
 async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
+    let names = init_hashmap(msg, ctx).await;
     //ir ao voice channel buscar os ids
     let mut people_vc: Vec<String> = Vec::new();
     let guild = msg.guild(&ctx.cache).await.expect("something");
@@ -501,13 +513,8 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
         all_titles = all_titles + "\n";
         let mut persons = String::new();
         for person in &movie.people {
-            //Passar o id para um int
-            let person: u64 = person.parse().unwrap();
-            println!("{}", person);
-            //Passar agora para um membro (struct do serenety)
-            let person = msg.guild_id.unwrap().member(&ctx.http, person).await?;
-            println!("{:?}",person);
-            let string = format!("{}\n", person.user.name);
+            let name = names.get(person).unwrap();
+            let string = format!("{}\n", name);
             persons.push_str(&string);
         }
 
