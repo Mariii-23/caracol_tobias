@@ -30,7 +30,7 @@ async fn help(
 }
 
 #[group]
-#[commands(ping, hi, about, embed, poll,which)]
+#[commands(avatar,ping, hi, about, embed, poll,which)]
 #[description = "Some general commands\n"]
 struct General;
 
@@ -274,5 +274,41 @@ async fn which(ctx: &Context, msg: &Message) -> CommandResult {
         },
         None => { msg.reply(&ctx, "Something happen\nError\n").await?;},
     }
+    Ok(())
+}
+
+
+#[command]
+#[description = "Shows person's avatar\n"]
+#[usage = "\"person\""]
+#[example = "@person1"]
+#[max_args(1)]
+async fn avatar(ctx: &Context, msg: &Message) -> CommandResult {
+    let person = &msg.mentions;
+    if person.len() == 0  && msg.content.is_empty() {
+        msg.channel_id.say(&ctx.http, "Error! Command is wrong! Try §help").await?;
+        return Ok(());
+    }
+
+    let msg = msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|e| {
+            use serenity::utils::Colour;
+            e.colour(Colour::BLITZ_BLUE);
+
+            if person.len() == 0 {
+                e.title(&msg.author.name);
+                e.image(&msg.author.avatar_url().unwrap());
+            }
+            else {
+                e.title(&person[0].name);
+                e.image(person[0].avatar_url().unwrap());
+            };
+
+            e
+        });
+        m
+    });
+    msg.await.unwrap();
+
     Ok(())
 }
