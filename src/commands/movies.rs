@@ -18,149 +18,28 @@
 //--- Fazer uma função que vê as pessoas num voice channel e vê que filmes podem ser vistos com essas pessoas (§movie choose talvez?)
 //--- Fazer uma função como a de cima mas com ping às pessoas em vez de ver o voice channel
 
+use std::collections::HashMap;
+
 extern crate serenity;
-
-use std::{cmp::Ordering, collections::HashMap, fs::File, io::{BufRead, BufReader, Read, Write}, path::Path};
-use crate::modules::pagination;
-
-use serenity::{builder::CreateMessage, cache::Cache, framework::standard::{
+use serenity::{builder::CreateMessage,framework::standard::{
         macros::{command, group},
          CommandResult,
-    }, http::{CacheHttp, client::Http}, model::{channel::{ChannelType, Message}, id::UserId}, model::guild::Guild, model::id::GuildId, prelude::*};
+}, model::channel::Message, prelude::*};
 use serenity_utils::menu::Menu;
 
-use omdb::*;
+
+use crate::modules::pagination;
+use crate::modules::movies_aux;
+use movies_aux::*;
+use movies_aux::Movie as Movie;
+
 
 #[group]
 #[commands(add, rm, add_person, rm_person, show, choose_vc)]
 #[prefixes("movie","mv")]
 #[description("movie stuff")]
-
 struct Movies;
 
-#[derive(Eq)]
-//struct para cada linha do ficheiro (provavelmente vai ter que ser muito alterada)
-struct Movie {
-    title: String,
-    people: Vec<String>,
-    link_imdb: String,
-    imdb_id: String
-}
-
-impl Ord for Movie {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.people.len().cmp(&other.people.len())
-    }
-}
-
-impl PartialOrd for Movie {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for Movie {
-    fn eq(&self, other: &Self) -> bool {
-        (self.people.len()) == (other.people.len())
-    }
-}
-
-const APIKEY: &str = "b9a36ff2"; 
-
-async fn search_by_name(name: String) -> Result<SearchResults, Error> {
-    omdb::search(name).apikey(APIKEY).get().await
-}
-
-async fn movie_with_name(name: String) -> Result<omdb::Movie, Error> {
-    println!("{}{:?}", name, omdb::title(&name).get().await);
-    omdb::title(name).apikey(APIKEY).get().await
-}
-
-async fn movie_with_id(id: String) -> Result<omdb::Movie, Error> {
-    println!("{}{:?}", id, omdb::title(&id).get().await);
-    omdb::imdb_id(id).apikey(APIKEY).get().await
-}
-
-
-
-
-
-//Passar o ficheiro para um vetor de struct (Está pouco otimizada)
-fn file_to_struct(msg: &Message) -> Vec<Movie>{
-    
-    let mut movies = Vec::new();
-    let mut path = String::from("files/movies/");
-    path.push_str(msg.guild_id.unwrap().to_string().as_str());
-    path.push_str(".csv");
-    //Abrir o ficheiro e passar tudo para um BuffReader (é mais rapido do que passar para string)
-    let f = match File::open(&path) {
-        Ok(file) => file,
-        Err(_) => {
-            File::create(path).unwrap();
-            return movies;
-        }
-    };
-    let mut buf_reader = BufReader::new(f);
-    let mut contents = String::new();
-    //Agora passar o BuffReader para string
-    buf_reader.read_to_string(&mut contents).unwrap();
-    if contents.len() == 0 {
-        return movies;
-    }
-    //Dividir o ficheiro em um vetor em que cada elemento é uma linha do ficheiro
-    let file: Vec<&str> = contents.split("\n").collect();
-    for f in &file {
-        if f.len() == 0 {
-            return movies;
-        }
-        let aux: Vec<&str> = f.split(";").collect();
-        let p: Vec<&str> = aux[1].split(",").collect();
-        let mut aux2 = Vec::new();
-        for a in p {
-            aux2.push(a.to_string());
-        }
-        let imdb_id  = aux[2].to_string();
-        let mut link_imdb = String::from("https://www.imdb.com/title/");
-        link_imdb.push_str(imdb_id.as_str());
-        let m = Movie {
-            title: aux[0].to_string(),
-            people: aux2,
-            link_imdb,
-            imdb_id
-        };
-        movies.push(m);
-    }
-    movies
-}
-
-fn struct_to_file(movies: Vec<Movie>, msg: &Message) {
-    
-    let mut path = String::from("files/movies/");
-    path.push_str(msg.guild_id.unwrap().to_string().as_str());
-    path.push_str(".csv");
-    
-    let mut file = match File::create(path){
-        Ok(file) => file,
-        Err(_) => panic!("Problema a abrir o ficheiro!"),
-    };
-
-    for i in movies {
-        let mut line = String::new();
-        line.push_str(i.title.as_str().trim());
-        line.push_str(";");
-        for (index, j) in i.people.iter().enumerate() {
-            line.push_str(j.as_str().trim());
-            if index != i.people.len() - 1 {
-                line.push_str(",");
-            }
-        }
-        line.push_str(";");
-        line.push_str(i.imdb_id.as_str().trim());
-        file.write(line.as_bytes()).expect("Erro ao ecrever no ficheiro!");
-        file.write("\n".as_bytes()).expect("Erro no \n?");
-    }
-
-}
 
 async fn init_hashmap (msg: &Message, ctx: &Context) -> HashMap<String, String> {
     let mut hash = HashMap::new();
@@ -170,7 +49,6 @@ async fn init_hashmap (msg: &Message, ctx: &Context) -> HashMap<String, String> 
     }
     hash
 }
-
 
 #[command]
 #[description("Add a movie to the list with either name or IMDB id")]
@@ -226,7 +104,6 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     }
 
 
-
     let mut movies: Vec<Movie> = file_to_struct(msg);
     for f in &movies {
         println!("Movie title: {}; movie: {}", f.title, title);
@@ -255,9 +132,6 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     msg.channel_id.say(&ctx.http, aux).await?;
     Ok(())
 }
-
-
-
 
 #[command]
 #[description("Remove a movie to the list")]
@@ -379,7 +253,6 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
     msg.channel_id.say(&ctx.http, "Erro! O filme não foi encontrado").await?;
     Ok(())
 }
-
 
 #[command]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {

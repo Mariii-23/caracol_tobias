@@ -183,12 +183,12 @@ async fn about(ctx: & Context, msg: &Message) -> CommandResult {
 
     // let args = msg.content[2..].split_once(" ").unwrap();
     // let mut title = String::from("Poll: ") + args.1;
-    let mut title = String::from("Poll: ") + &question;
+    let title = String::from("Poll: ") + &question;
 
     // let options = args.1.split(';');
     let mut description = String::new();
     // let mut count_options: usize = 0;
-    let mut count_options: usize = answers.len();
+    let count_options: usize = answers.len();
 
      let emojis = (0..count_options)
          .map(|i| std::char::from_u32('🇦' as u32 + i as u32).expect("Failed to format emoji"))

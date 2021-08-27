@@ -91,4 +91,10 @@ use tracing::{error, instrument};
      if let Err(why) = client.start_autosharded().await {
         error!("An error occurred while running the client: {:?}", why);
      }
+// pub struct ShardMessenger { /* fields omitted */ }
+// use serenity::model::user::OnlineStatus;
+
+//      client.set_status(OnlineStatus::DoNotDisturb);
+//      use serenity::model::gateway::Activity;
+     // client.set_activity(Some(Activity::playing("Heroes of the Storm")));
 }
