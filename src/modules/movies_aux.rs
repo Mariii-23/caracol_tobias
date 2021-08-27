@@ -1,11 +1,13 @@
-use std::{cmp::Ordering, fs::File, io::{ BufReader, Read, Write}};
+use std::{cmp::Ordering, fs::{File,write}, io::BufReader};
 use omdb::*;
 
 use serenity::model::channel::Message;
-use crate::constantes::APIKEY;
-use crate::constantes::FILES_PATH;
+use crate::constantes::{APIKEY,FILES_PATH,EXTENSION_PATH};
 
-#[derive(Eq)]
+extern crate serde_json;
+use serde::{Deserialize, Serialize};
+
+#[derive(Eq, Serialize, Deserialize, Debug)]
 //struct para cada linha do ficheiro (provavelmente vai ter que ser muito alterada)
 pub struct Movie {
     pub title: String,
@@ -32,10 +34,9 @@ impl PartialEq for Movie {
     }
 }
 
-
-pub async fn search_by_name(name: String) -> Result<SearchResults, Error> {
-    omdb::search(name).apikey(APIKEY).get().await
-}
+// pub async fn search_by_name(name: String) -> Result<SearchResults, Error> {
+//     omdb::search(name).apikey(APIKEY).get().await
+// }
 
 pub async fn movie_with_name(name: String) -> Result<omdb::Movie, Error> {
     println!("{}{:?}", name, omdb::title(&name).get().await);
@@ -51,10 +52,11 @@ pub async fn movie_with_id(id: String) -> Result<omdb::Movie, Error> {
 // TODO Mudar para json
 pub fn file_to_struct(msg: &Message) -> Vec<Movie>{
 
-    let mut movies = Vec::new();
+    let movies = Vec::new();
     let mut path = String::from(FILES_PATH);
     path.push_str(msg.guild_id.unwrap().to_string().as_str());
-    path.push_str(".csv");
+    // path.push_str(".csv");
+    path.push_str(EXTENSION_PATH);
     //Abrir o ficheiro e passar tudo para um BuffReader (é mais rapido do que passar para string)
     let f = match File::open(&path) {
         Ok(file) => file,
@@ -63,36 +65,38 @@ pub fn file_to_struct(msg: &Message) -> Vec<Movie>{
             return movies;
         }
     };
-    let mut buf_reader = BufReader::new(f);
-    let mut contents = String::new();
-    //Agora passar o BuffReader para string
-    buf_reader.read_to_string(&mut contents).unwrap();
-    if contents.len() == 0 {
-        return movies;
-    }
-    //Dividir o ficheiro em um vetor em que cada elemento é uma linha do ficheiro
-    let file: Vec<&str> = contents.split("\n").collect();
-    for f in &file {
-        if f.len() == 0 {
-            return movies;
-        }
-        let aux: Vec<&str> = f.split(";").collect();
-        let p: Vec<&str> = aux[1].split(",").collect();
-        let mut aux2 = Vec::new();
-        for a in p {
-            aux2.push(a.to_string());
-        }
-        let imdb_id  = aux[2].to_string();
-        let mut link_imdb = String::from("https://www.imdb.com/title/");
-        link_imdb.push_str(imdb_id.as_str());
-        let m = Movie {
-            title: aux[0].to_string(),
-            people: aux2,
-            link_imdb,
-            imdb_id
-        };
-        movies.push(m);
-    }
+    let buf_reader = BufReader::new(f);
+
+    let movies: Vec<Movie> = serde_json::from_reader(buf_reader).unwrap();
+    // let mut contents = String::new();
+    // //Agora passar o BuffReader para string
+    // buf_reader.read_to_string(&mut contents).unwrap();
+    // if contents.len() == 0 {
+    //     return movies;
+    // }
+    // //Dividir o ficheiro em um vetor em que cada elemento é uma linha do ficheiro
+    // let file: Vec<&str> = contents.split("\n").collect();
+    // for f in &file {
+    //     if f.len() == 0 {
+    //         return movies;
+    //     }
+    //     let aux: Vec<&str> = f.split(";").collect();
+    //     let p: Vec<&str> = aux[1].split(",").collect();
+    //     let mut aux2 = Vec::new();
+    // //     for a in p {
+    //         aux2.push(a.to_string());
+    //     }
+    //     let imdb_id  = aux[2].to_string();
+    //     let mut link_imdb = String::from("https://www.imdb.com/title/");
+    //     link_imdb.push_str(imdb_id.as_str());
+    //     let m = Movie {
+    //         title: aux[0].to_string(),
+    //         people: aux2,
+    //         link_imdb,
+    //         imdb_id
+    //     };
+    //     movies.push(m);
+    // }
     movies
 }
 
@@ -101,26 +105,29 @@ pub fn struct_to_file(movies: Vec<Movie>, msg: &Message) {
 
     let mut path = String::from(FILES_PATH);
     path.push_str(msg.guild_id.unwrap().to_string().as_str());
-    path.push_str(".csv");
+    path.push_str(EXTENSION_PATH);
 
-    let mut file = match File::create(path){
-        Ok(file) => file,
-        Err(_) => panic!("Problema a abrir o ficheiro!"),
-    };
+    // let mut file = match File::create(path){
+    //     Ok(file) => file,
+    //     Err(_) => panic!("Problema a abrir o ficheiro!"),
+    // };
 
-    for i in movies {
-        let mut line = String::new();
-        line.push_str(i.title.as_str().trim());
-        line.push_str(";");
-        for (index, j) in i.people.iter().enumerate() {
-            line.push_str(j.as_str().trim());
-            if index != i.people.len() - 1 {
-                line.push_str(",");
-            }
-        }
-        line.push_str(";");
-        line.push_str(i.imdb_id.as_str().trim());
-        file.write(line.as_bytes()).expect("Erro ao ecrever no ficheiro!");
-        file.write("\n".as_bytes()).expect("Erro no \n?");
-    }
+    //for i in movies {
+    //    let mut line = String::new();
+    //    line.push_str(i.title.as_str().trim());
+    //    line.push_str(";");
+    //    for (index, j) in i.people.iter().enumerate() {
+    //        line.push_str(j.as_str().trim());
+    //        if index != i.people.len() - 1 {
+    //            line.push_str(",");
+    //        }
+    //    }
+    //    line.push_str(";");
+    //    line.push_str(i.imdb_id.as_str().trim());
+    //    file.write(line.as_bytes()).expect("Erro ao ecrever no ficheiro!");
+    //    file.write("\n".as_bytes()).expect("Erro no \n?");
+    //}
+
+    let movies = serde_json::to_string(&movies).unwrap();
+    write(path,&movies).expect("Error write Movies on json file");
 }
