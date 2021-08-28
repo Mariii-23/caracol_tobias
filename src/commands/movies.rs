@@ -104,7 +104,7 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     }
 
 
-    let mut movies: Vec<Movie> = file_to_struct(msg);
+    let mut movies: Vec<Movie> = json_to_vec_movies(msg);
     for f in &movies {
         println!("Movie title: {}; movie: {}", f.title, title);
         if f.title.to_uppercase().eq(&title.to_uppercase()) {
@@ -125,7 +125,7 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
     movies.push(m);
 
     //Finalmente falta passar tudo para o ficheiro outra vez (com o novo filme adicionado)
-    struct_to_file(movies, msg);
+    vec_movie_to_json(movies, msg);
 
     //println!("FILES: {:?}", movies);
     println!("{:?}", movie);
@@ -150,7 +150,7 @@ async fn rm (ctx: &Context, msg: &Message) -> CommandResult {
         return Ok(());
     }
 
-    let mut movies = file_to_struct(msg);
+    let mut movies = json_to_vec_movies(msg);
     if movies.len() == 0 {
         msg.channel_id.say(&ctx.http, "There are no movies to remove").await?;
         return Ok(());
@@ -158,7 +158,7 @@ async fn rm (ctx: &Context, msg: &Message) -> CommandResult {
     for (index, m) in movies.iter().enumerate() {
         if m.title.to_uppercase().eq(&movie.to_uppercase()) {
             movies.remove(index);
-            struct_to_file(movies, msg);
+            vec_movie_to_json(movies, msg);
             msg.channel_id.say(&ctx.http, "Movie removed successfully!").await?;
             return Ok(());
         }
@@ -189,7 +189,7 @@ async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
         return Ok(());
     }
 
-    let mut movies = file_to_struct(msg);
+    let mut movies = json_to_vec_movies(msg);
     for (index, m) in movies.iter().enumerate() {
         if m.title.to_uppercase().eq(&movie.to_uppercase()) {
             for i in &m.people {
@@ -199,7 +199,7 @@ async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
                 }
             } 
             movies[index].people.push(person[0].id.to_string());
-            struct_to_file(movies, msg);
+            vec_movie_to_json(movies, msg);
             msg.channel_id.say(&ctx.http, "Person added successfully!").await?;
             return Ok(());
         }
@@ -219,7 +219,6 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
     let movie = movie[0].trim();
     println!("{}", movie);
 
-    //verifica se o titulo do filme foi escrito entre '
     if movie.len() < 3 {
         msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
@@ -231,7 +230,7 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
         return Ok(());
     }
 
-    let mut movies = file_to_struct(msg);
+    let mut movies = json_to_vec_movies(msg);
     for (index, m) in movies.iter().enumerate() {
         if m.title.to_uppercase().eq(&movie.to_uppercase()) {
             for (index2, i) in m.people.iter().enumerate() {
@@ -241,7 +240,7 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
                         return Ok(());
                     }
                     movies[index].people.remove(index2);
-                    struct_to_file(movies, msg);
+                    vec_movie_to_json(movies, msg);
                     msg.channel_id.say(&ctx.http, "Pessoa removida com sucesso").await?;
                     return Ok(());
                 }
@@ -263,7 +262,7 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
         names.insert(member.user.id.to_string(), member.user.name.to_string());
     }
 
-    let movies = file_to_struct(msg);
+    let movies = json_to_vec_movies(msg);
     let mut pages = Vec::new();
 
     let mut all_titles = String::new();
@@ -291,18 +290,20 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
         pages.push(page);
     }
 
-    let msg1 = msg
-        .channel_id
-        .send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.field("All movies", all_titles, false);
+    if !all_titles.is_empty() {
+        let msg1 = msg
+            .channel_id
+            .send_message(&ctx.http, |m| {
+                m.embed(|e| {
+                    e.field("All movies", all_titles, false);
 
-                e
+                    e
+                });
+                m
             });
-            m
-    });
 
-    msg1.await.unwrap();
+        msg1.await.unwrap();
+    }
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
     // Runs the menu and returns optional `Message` used to display the menu.
@@ -350,7 +351,7 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     
 
     //Ir buscar os filmes ao file
-    let movies = file_to_struct(msg);
+    let movies = json_to_vec_movies(msg);
 
     //Ver que filmes podem ser vistos em função  das pessoas na chamada
     let mut ok_movies: Vec<Movie> = Vec::new();

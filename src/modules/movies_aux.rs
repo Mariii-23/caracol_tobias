@@ -49,8 +49,7 @@ pub async fn movie_with_id(id: String) -> Result<omdb::Movie, Error> {
 }
 
 //Passar o ficheiro para um vetor de struct (Está pouco otimizada)
-// TODO Mudar para json
-pub fn file_to_struct(msg: &Message) -> Vec<Movie>{
+pub fn json_to_vec_movies(msg: &Message) -> Vec<Movie>{
 
     let movies = Vec::new();
     let mut path = String::from(FILES_PATH);
@@ -67,7 +66,13 @@ pub fn file_to_struct(msg: &Message) -> Vec<Movie>{
     };
     let buf_reader = BufReader::new(f);
 
-    let movies: Vec<Movie> = serde_json::from_reader(buf_reader).unwrap();
+    let movies: Vec<Movie> = match  serde_json::from_reader(buf_reader){
+        Ok(movies) => movies,
+        Err(err) => {
+            println!("\nError reading json file {} :\n {}",path,err);
+            Vec::new()
+        }
+    };
     // let mut contents = String::new();
     // //Agora passar o BuffReader para string
     // buf_reader.read_to_string(&mut contents).unwrap();
@@ -100,8 +105,7 @@ pub fn file_to_struct(msg: &Message) -> Vec<Movie>{
     movies
 }
 
-//TODO mudar para json
-pub fn struct_to_file(movies: Vec<Movie>, msg: &Message) {
+pub fn vec_movie_to_json(movies: Vec<Movie>, msg: &Message) {
 
     let mut path = String::from(FILES_PATH);
     path.push_str(msg.guild_id.unwrap().to_string().as_str());
