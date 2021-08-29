@@ -292,15 +292,16 @@ async fn avatar(ctx: &Context, msg: &Message) -> CommandResult {
 
     let msg = msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| {
+            use serenity::utils::Colour;
+            e.colour(Colour::BLITZ_BLUE);
+
             if person.len() == 0 {
                 e.title(&msg.author.name);
-                e.thumbnail(
-                    &msg.author.avatar_url().unwrap());
+                e.image(&msg.author.avatar_url().unwrap());
             }
             else {
                 e.title(&person[0].name);
-                e.thumbnail(
-                    person[0].avatar_url().unwrap());
+                e.image(person[0].avatar_url().unwrap());
             };
 
             e
