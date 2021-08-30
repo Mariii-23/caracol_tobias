@@ -16,6 +16,39 @@ pub struct Movie {
     pub imdb_id: String
 }
 
+impl Movie {
+    pub fn create_movie(title: String, people: Vec<String>, imdb_id: String) -> Movie {
+        let mut link_imdb = String::from("https://www.imdb.com/title/");
+        link_imdb.push_str(imdb_id.as_str());
+        Movie {
+            title,
+            people,
+            link_imdb,
+            imdb_id
+        }
+    }
+
+    pub fn search_title(movies: &mut Vec<Movie>, title: String) -> Result<&Movie, String> {
+        for movie in movies{
+            if movie.title.to_uppercase().eq(&title.to_uppercase()) {
+
+                return Ok(movie);
+            }
+        }
+        Err(title)
+    }
+
+    pub fn search_person(&self, id: &String) -> Result<String, String> {
+        for person in &self.people {
+            if id.eq(person) {
+                return Err(id.to_owned());
+            }
+        }
+        Ok(id.to_owned())
+    }
+
+}
+
 impl Ord for Movie {
     fn cmp(&self, other: &Self) -> Ordering {
         self.people.len().cmp(&other.people.len())
@@ -33,6 +66,7 @@ impl PartialEq for Movie {
         (self.people.len()) == (other.people.len())
     }
 }
+
 
 // pub async fn search_by_name(name: String) -> Result<SearchResults, Error> {
 //     omdb::search(name).apikey(APIKEY).get().await

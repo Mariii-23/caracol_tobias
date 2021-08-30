@@ -96,23 +96,20 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
 
 
     let mut movies: Vec<Movie> = json_to_vec_movies(msg);
-    for f in &movies {
-        println!("Movie title: {}; movie: {}", f.title, title);
-        if f.title.to_uppercase().eq(&title.to_uppercase()) {
-            msg.channel_id.say(&ctx.http, "Error! Movie already exists").await?;
+
+    let title = match Movie::search_title(&mut movies, title) {
+        Ok(filme) => {
+            msg.channel_id.say(&ctx.http, format!("Error! Movie already exists: {}", filme.link_imdb )).await?;
             return Ok(());
         }
-    }
+        Err(title) => title,
+    };
+
     let aux = format!("Movie added susscessfully: {}", &link_imdb);
 
 
     //Agora é adicionar um filme à struct
-    let m = Movie{
-        title,
-        people,
-        link_imdb,
-        imdb_id
-    };
+    let m = Movie::create_movie(title, people, imdb_id);
     movies.push(m);
 
     //Finalmente falta passar tudo para o ficheiro outra vez (com o novo filme adicionado)
@@ -247,14 +244,52 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
+    let mut movies = json_to_vec_movies(msg);
     let mut names = init_hashmap(msg, ctx).await;
+    let title = msg.content.replace("§movie show", "");
+    let title = title.replace("§mv show", "");
+    println!("{}", title);
+    if !title.eq("") {
+        let title = title.trim().to_string();
+        let movie = match Movie::search_title(&mut movies, title) {
+            Ok(movie) => movie,
+            Err(title) => {
+                msg.channel_id.say(&ctx.http, format!("Error, movie not found: {}", title)).await?;
+                return Ok(());
+            }
+        };
+        let mut people = String::new();
+        for person in &movie.people {
+            let name = names.get(person).unwrap();
+            let string = format!("{}\n", name);
+            people.push_str(&string);
+        }
+    
+        msg
+            .channel_id
+            .send_message(&ctx.http, |m| {
+                m.embed(|e| {
+                    e.title(&movie.title);
+                    e.description(&movie.link_imdb);
+                    e.field("People", people, true);
+
+                    e
+                });
+                m
+        }).await.unwrap();
+
+        return Ok(());
+        
+
+    }
+
+
     let guild = msg.guild_id.unwrap();//.members(&ctx.http, None, None).await.expect("Falha aqui não sei pq");
     let members = guild.members(&ctx.http, Some(100), None).await?;
     for member in members {
         names.insert(member.user.id.to_string(), member.user.name.to_string());
     }
 
-    let movies = json_to_vec_movies(msg);
     let mut pages = Vec::new();
 
     let mut all_titles = String::new();
@@ -292,7 +327,6 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
             });
             m
     });
-
     msg1.await.unwrap();
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
