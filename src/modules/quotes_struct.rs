@@ -1,26 +1,13 @@
 extern crate serenity;
-use serenity::{
-    builder::CreateMessage,
-    framework::standard::{
-        macros::{command, group},
-        CommandResult,
-    },
-    model::channel::Message,
-    prelude::*,
-};
-use serenity_utils::menu::Menu;
+use serenity::model::channel::Message;
 
 extern crate serde_json;
 use serde::{Deserialize, Serialize};
-use serde_json::{to_writer, Map, Result, Value};
 
 use crate::constantes::{EXTENSION_PATH, QUOTES_PATH};
 
-use std::cmp::Ordering;
-use std::error::Error;
 use std::fs::{write, File};
 use std::io::BufReader;
-use std::path::Path;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Debug, Hash, Clone, Copy)]
 pub enum CATEGORY {
@@ -75,7 +62,8 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AllQuotes {
-    // pub quotes: Option<serde_json::Map<CATEGORY, serde_json::Map<String, Vec<Quote>>>>,
+    // maybe alterar o hahMap<Categoru,...
+    // para um array visto cada category ter um numero distinto
     pub quotes: Option<HashMap<CATEGORY, HashMap<String, Vec<Quote>>>>,
 }
 
@@ -100,38 +88,36 @@ impl AllQuotes {
         }
     }
 
-    //TODO tem que ser &mut self
-    // mas ta a dar erros
-    // pub fn add(&mut self, quote: Quote) {
-    //     let id = String::from(&quote.id);
-    //     let category = &quote.category.clone();
+    pub fn add(&mut self, quote: Quote) {
+        let id = String::from(&quote.id);
+        let category = &quote.category.clone();
 
-    //     match self.quotes {
-    //         Some(mut quotes) => match quotes.get_mut(category) {
-    //             Some(map_category) => match map_category.get_mut(&id) {
-    //                 Some(vec_quotes) => {
-    //                     vec_quotes.push(quote);
-    //                 }
-    //                 None => {
-    //                     let vec_quote = vec![quote];
-    //                     map_category.insert(id, vec_quote);
-    //                 }
-    //             },
-    //             None => {
-    //                 let vec_quote = vec![quote];
-    //                 let mut map_id = HashMap::new();
-    //                 map_id.insert(id, vec_quote);
-    //                 quotes.insert(*category, map_id);
-    //             }
-    //         },
-    //         None => {
-    //             *self = AllQuotes::from(quote);
-    //         }
-    //     }
-    // }
+        match &mut self.quotes {
+            Some(quotes) => match quotes.get_mut(category) {
+                Some(map_category) => match map_category.get_mut(&id) {
+                    Some(vec_quotes) => {
+                        vec_quotes.push(quote);
+                    }
+                    None => {
+                        let vec_quote = vec![quote];
+                        map_category.insert(id, vec_quote);
+                    }
+                },
+                None => {
+                    let vec_quote = vec![quote];
+                    let mut map_id = HashMap::new();
+                    map_id.insert(id, vec_quote);
+                    quotes.insert(*category, map_id);
+                }
+            },
+            None => {
+                *self = AllQuotes::from(quote);
+            }
+        }
+    }
 
     /** Verifica se uma dada quote já se encontra guardada
-     * Ele apenas verifica na categoria da quote dada e do seu id,
+     * Ele apenas verifica na categoria da quote dada e do seu user_id,
      * nao sei se o melhor seria ir ver a todas as frases de quotes
      * (isso seria ao gosto dos utilizadores)*/
     pub fn eq_quote(&self, other: &Quote) -> bool {
@@ -154,17 +140,18 @@ impl AllQuotes {
         false
     }
 
-    //TODO remover por id de quote
-    // pub fn remove_by_id(&self, id: String) -> bool {
+    //TODO Fazer : remover por id de quote
+    // pub fn remove_by_id(&mut self, id: String) -> bool {
     //     let mut fail = false;
-    //     match &self.quotes {
+    //     match &mut self.quotes {
     //         None => (),
     //         Some(map_category) => {
-    //             for map_id in map_category.values() {
-    //                 for vec_quotes in map_id.values() {
-    //                     for quote in vec_quotes {
+    //             for (_key, map_id) in map_category.iter_mut() {
+    //                 for (_key_id, vec_quotes) in map_id.iter_mut() {
+    //                     for (index, quote) in vec_quotes.iter().enumerate() {
     //                         if quote.id == id {
-    // remover quote
+    //                             fail = true;
+    //                             vec_quotes.remove(index);
     //                         }
     //                     }
     //                 }

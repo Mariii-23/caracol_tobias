@@ -1,12 +1,10 @@
 
 use std::collections::HashMap;
 
-
 extern crate serenity;
-use serenity::{builder::CreateMessage,framework::standard::{
-        macros::{command, group},
-         CommandResult,
-}, model::channel::Message, prelude::*};
+use serenity::{
+    model::channel::Message, prelude::Context
+};
 
 
 pub async fn init_hashmap (msg: &Message, ctx: &Context) -> HashMap<String, String> {

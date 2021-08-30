@@ -1,7 +1,4 @@
 extern crate serenity;
-
-use serde::{Deserialize, Serialize};
-
 use serenity::{
     framework::standard::{
         Args,
@@ -16,6 +13,7 @@ use crate::modules::quotes_struct;
 use quotes_struct::*;
 
 use crate::modules::function_aux::get_name_user_by_id;
+use rand::Rng;
 
 #[group]
 #[help_available]
@@ -25,19 +23,17 @@ use crate::modules::function_aux::get_name_user_by_id;
 #[prefixes("quotes")]
 struct Quotes;
 
-
-extern crate serde_json;
-use std::fs::File;
-
 #[command]
+#[sub_commands(add_phrase)]
 //TODO alguns parametros nao estao corretos
 async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
+    // let phrase = &msg.message_reference
     let phrase = args.single_quoted::<String>()?;
 
     // let args = args;
 
-    // let mut all_quotes = AllQuotes::json_to_vec_movies(&msg);
+    let mut all_quotes = AllQuotes::json_to_vec_movies(&msg);
     let quote = Quote::build(
         CATEGORY::MEMBERS,
         msg.id.to_string(),
@@ -45,7 +41,8 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         "ola".to_string(),
         phrase );
 
-    let all_quotes= AllQuotes::from(quote);
+    // let all_quotes= AllQuotes::from(quote);
+    all_quotes.add(quote);
 
     all_quotes.quotes_to_json(msg);
 
@@ -53,35 +50,50 @@ async fn add(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     Ok(())
 }
 
-use rand::Rng;
+#[command]
+#[aliases(phrase)]
+async fn add_phrase(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+
+    let phrase = args.single_quoted::<String>()?;
+    let nick =
+        match msg.author.nick_in(&ctx, msg.guild_id.unwrap()).await {
+        None => String::from(&msg.author.name),
+        Some(name) => name,
+    };
+
+    let mut all_quotes = AllQuotes::json_to_vec_movies(msg);
+    let quote = Quote::build(
+        CATEGORY::MEMBERS,
+        msg.id.to_string(),
+        msg.author.id.to_string(),
+        nick,
+        phrase );
+
+    all_quotes.add(quote);
+    all_quotes.quotes_to_json(msg);
+    msg.reply(ctx,"Quote add\n").await?;
+    Ok(())
+}
+
 
 #[command]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
     let quotes = AllQuotes::json_to_vec_movies(&msg);
 
-    let my_quotes = quotes.get_by_user_id(msg.author.id.to_string());
+    // let my_quotes = quotes.get_by_user_id(msg.author.id.to_string());
 
-    match my_quotes {
-        None => println!("wtff"),
-        Some(vetor) => {
-            for quote in vetor{
-                println!("{}",&quote.quote);
-            }
-        }
-    }
-
-        match quotes.quotes {
-            None => (),
-            Some(map_category) => {
-                for map_id in map_category.values() {
-                    for vec_quotes in map_id.values() {
-                        for quote in vec_quotes {
-                            println!("{:?}",quote);
-                        }
+    match quotes.quotes {
+        None => (),
+        Some(map_category) => {
+            for map_id in map_category.values() {
+                for vec_quotes in map_id.values() {
+                    for quote in vec_quotes {
+                        println!("{:?}",quote);
                     }
                 }
             }
         }
+    }
 
     Ok(())
 }
