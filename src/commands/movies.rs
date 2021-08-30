@@ -18,8 +18,6 @@
 //--- Fazer uma função que vê as pessoas num voice channel e vê que filmes podem ser vistos com essas pessoas (§movie choose talvez?)
 //--- Fazer uma função como a de cima mas com ping às pessoas em vez de ver o voice channel
 
-use std::collections::HashMap;
-
 extern crate serenity;
 use serenity::{builder::CreateMessage,framework::standard::{
         macros::{command, group},
@@ -33,6 +31,8 @@ use crate::modules::movies_aux;
 use movies_aux::*;
 use movies_aux::Movie as Movie;
 
+use crate::modules::function_aux::init_hashmap;
+
 
 #[group]
 #[commands(add, rm, add_person, rm_person, show, choose_vc)]
@@ -40,15 +40,6 @@ use movies_aux::Movie as Movie;
 #[description("movie stuff")]
 struct Movies;
 
-
-async fn init_hashmap (msg: &Message, ctx: &Context) -> HashMap<String, String> {
-    let mut hash = HashMap::new();
-    let members = msg.guild_id.unwrap().members(&ctx.http, None, None).await.expect("Falha aqui não sei pq");
-    for member in members {
-        hash.insert(member.user.id.to_string(), member.user.name.to_string());
-    }
-    hash
-}
 
 #[command]
 #[description("Add a movie to the list with either name or IMDB id")]
@@ -219,6 +210,7 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
     let movie = movie[0].trim();
     println!("{}", movie);
 
+    //verifica se o titulo do filme foi escrito entre '
     if movie.len() < 3 {
         msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
@@ -290,20 +282,18 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
         pages.push(page);
     }
 
-    if !all_titles.is_empty() {
-        let msg1 = msg
-            .channel_id
-            .send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.field("All movies", all_titles, false);
+    let msg1 = msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.field("All movies", all_titles, false);
 
-                    e
-                });
-                m
+                e
             });
+            m
+    });
 
-        msg1.await.unwrap();
-    }
+    msg1.await.unwrap();
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
     // Runs the menu and returns optional `Message` used to display the menu.

@@ -4,7 +4,7 @@ mod modules;
 mod commands;
 
 use modules::events;
-use commands::{general::HELP, EXAMPLES_GROUP, ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP, MOVIES_GROUP};
+use commands::{general::HELP, EXAMPLES_GROUP, ADMINS_GROUP, EMOJI_GROUP, GENERAL_GROUP, MOVIES_GROUP,QUOTES_GROUP};
 
 use std::{env,collections::HashSet};
 use serenity::{
@@ -78,6 +78,7 @@ use tracing::{error, instrument};
         .group(&ADMINS_GROUP)
         .group(&EXAMPLES_GROUP)
         .group(&MOVIES_GROUP)
+        .group(&QUOTES_GROUP)
          ;
 
      let mut client = Client::builder(&token)

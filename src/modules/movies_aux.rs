@@ -2,7 +2,7 @@ use std::{cmp::Ordering, fs::{File,write}, io::BufReader};
 use omdb::*;
 
 use serenity::model::channel::Message;
-use crate::constantes::{APIKEY,FILES_PATH,EXTENSION_PATH};
+use crate::constantes::{APIKEY,MOVIES_PATH,EXTENSION_PATH};
 
 extern crate serde_json;
 use serde::{Deserialize, Serialize};
@@ -52,7 +52,7 @@ pub async fn movie_with_id(id: String) -> Result<omdb::Movie, Error> {
 pub fn json_to_vec_movies(msg: &Message) -> Vec<Movie>{
 
     let movies = Vec::new();
-    let mut path = String::from(FILES_PATH);
+    let mut path = String::from(MOVIES_PATH);
     path.push_str(msg.guild_id.unwrap().to_string().as_str());
     // path.push_str(".csv");
     path.push_str(EXTENSION_PATH);
@@ -107,7 +107,7 @@ pub fn json_to_vec_movies(msg: &Message) -> Vec<Movie>{
 
 pub fn vec_movie_to_json(movies: Vec<Movie>, msg: &Message) {
 
-    let mut path = String::from(FILES_PATH);
+    let mut path = String::from(MOVIES_PATH);
     path.push_str(msg.guild_id.unwrap().to_string().as_str());
     path.push_str(EXTENSION_PATH);
 
