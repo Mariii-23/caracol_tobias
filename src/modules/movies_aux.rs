@@ -1,11 +1,13 @@
-use std::{cmp::Ordering, fs::{File,write}, io::BufReader};
+use std::{cmp::Ordering, collections::HashMap, fs::{File,write}, io::BufReader};
 use omdb::*;
 
-use serenity::model::channel::Message;
+use serenity::{builder::CreateMessage, client::Context, model::{channel::{Message, ReactionType}, guild::Emoji}};
 use crate::constantes::{APIKEY,MOVIES_PATH,EXTENSION_PATH};
 
 extern crate serde_json;
 use serde::{Deserialize, Serialize};
+
+use super::function_aux::init_hashmap;
 
 #[derive(Eq, Serialize, Deserialize, Debug)]
 //struct para cada linha do ficheiro (provavelmente vai ter que ser muito alterada)
@@ -45,6 +47,16 @@ impl Movie {
             }
         }
         Ok(id.to_owned())
+    }
+
+    fn get_people(&self, names: &HashMap<String, String>) -> String {
+        let mut people = String::new();
+        for person in &self.people {
+            let name = names.get(person).unwrap();
+            let string = format!("{}\n", name);
+            people.push_str(&string);
+        }
+        people
     }
 
 }
@@ -168,4 +180,123 @@ pub fn vec_movie_to_json(movies: Vec<Movie>, msg: &Message) {
 
     let movies = serde_json::to_string(&movies).unwrap();
     write(path,&movies).expect("Error write Movies on json file");
+}
+
+fn get_all_mv_titles(movies: &Vec<Movie>) -> String {
+    let mut all_titles = String::new();
+    for movie in movies {
+        all_titles.push_str(&movie.title);
+        all_titles = all_titles + "\n";
+    }
+    all_titles
+}
+
+pub async fn show_one_mv(msg: &Message, ctx: &Context, movie: &Movie, names: &HashMap<String, String>) {
+    let id = &movie.imdb_id;
+    println!("{}", id);
+    let info = movie_with_id(id.to_owned()).await.unwrap();
+    msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.title(&movie.title);
+                e.description(&movie.link_imdb);
+                e.field("People", movie.get_people(names), true);
+                e.image(info.poster);
+                e.description(info.plot);
+
+                e
+            });
+            m
+    }).await.unwrap();
+}
+
+pub async fn show_all_mvs(msg: &Message, ctx: &Context, movies: &Vec<Movie>) {
+    msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.field("All movies", get_all_mv_titles(&movies), false);
+
+                e
+            });
+            m
+    }).await.unwrap();
+}  
+
+pub async fn show_mv_menu<'a>(movies: &Vec<Movie>, names: &HashMap<String, String>) -> Vec<CreateMessage<'a>> {
+    let mut pages = Vec::new();
+
+    for movie in movies {
+        let id = &movie.imdb_id;
+        println!("{}", id);
+        let info = movie_with_id(id.to_owned()).await.unwrap();
+        let people = movie.get_people(names);
+        let mut page = CreateMessage::default();
+        page.content("MOVIES").embed(|e| {
+            e.title(&movie.title);
+            if !movie.link_imdb.eq(""){
+                e.description(&movie.link_imdb);
+            }
+            e.field("People:",&people,true);
+            e.image(info.poster);
+            e.description(info.plot);
+
+         e
+        });
+        pages.push(page);
+
+    }
+    pages
+}
+
+
+pub async fn get_vc_people(ctx: &Context, msg: &Message) -> Result<Vec<String>, String> {
+    let mut people_vc: Vec<String> = Vec::new();
+    let guild = msg.guild(&ctx.cache).await.expect("something");
+    match guild.voice_states.get(&msg.author.id) {
+        Some(s) => {
+            let vc_id = s.channel_id.unwrap();
+            let guild = msg.guild_id.unwrap().channels(&ctx.http).await.unwrap();
+            let guild_channel = guild.get(&vc_id).unwrap();
+            let ids = guild_channel.members(&ctx.cache).await.unwrap();
+            for i in ids {
+                if !i.user.bot {
+                    people_vc.push(i.user.id.0.to_string());
+                }
+            }
+        }
+        _ => {
+            return Err("Erro! Não há pessoas no voice channel".to_string());
+        }
+    };
+    Ok(people_vc)
+}
+
+
+
+pub async fn create_review_poll(ctx: &Context, msg: &Message, movie: &Movie, names: &HashMap<String, String>) {
+    let emoji: Vec<ReactionType> = vec![ReactionType::Unicode("1️⃣".to_string()), ReactionType::Unicode("2️⃣".to_string()),
+                                        ReactionType::Unicode("3️⃣".to_string()), ReactionType::Unicode("4️⃣".to_string()),
+                                        ReactionType::Unicode("5️⃣".to_string()), ReactionType::Unicode("6️⃣".to_string()),
+                                        ReactionType::Unicode("7️⃣".to_string()), ReactionType::Unicode("8️⃣".to_string()),                                            ReactionType::Unicode("1️⃣".to_string()), ReactionType::Unicode("2️⃣".to_string()),
+                                        ReactionType::Unicode("9️⃣".to_string()), ReactionType::Unicode("🔟".to_string()),
+                                        ];
+    let id = &movie.imdb_id;
+    println!("{}", id);
+    let info = movie_with_id(id.to_owned()).await.unwrap();
+    msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.title(&movie.title);
+                e.description(&movie.link_imdb);
+                e.field("People", movie.get_people(names), true);
+                e.image(info.poster);
+                e.description(info.plot);
+
+                e
+            });
+            m.reactions(emoji)
+    }).await.unwrap();   
 }

@@ -35,7 +35,7 @@ use crate::modules::function_aux::init_hashmap;
 
 
 #[group]
-#[commands(add, rm, add_person, rm_person, show, choose_vc)]
+#[commands(add, rm, add_person, rm_person, show, choose_vc, seen)]
 #[prefixes("movie","mv")]
 #[description("movie stuff")]
 struct Movies;
@@ -258,26 +258,7 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
                 return Ok(());
             }
         };
-        let mut people = String::new();
-        for person in &movie.people {
-            let name = names.get(person).unwrap();
-            let string = format!("{}\n", name);
-            people.push_str(&string);
-        }
-    
-        msg
-            .channel_id
-            .send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.title(&movie.title);
-                    e.description(&movie.link_imdb);
-                    e.field("People", people, true);
-
-                    e
-                });
-                m
-        }).await.unwrap();
-
+        show_one_mv(msg, ctx, movie, &names).await; 
         return Ok(());
         
 
@@ -290,44 +271,10 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
         names.insert(member.user.id.to_string(), member.user.name.to_string());
     }
 
-    let mut pages = Vec::new();
 
-    let mut all_titles = String::new();
+    show_all_mvs(msg, ctx, &movies).await;
+    let pages = show_mv_menu(&movies, &names).await;
 
-    for movie in movies {
-        all_titles.push_str(&movie.title);
-        all_titles = all_titles + "\n";
-
-        let mut persons = String::new();
-        for person in &movie.people {
-            let name = names.get(person).unwrap();
-            let string = format!("{}\n", name);
-            persons.push_str(&string);
-        }
-
-        let mut page = CreateMessage::default();
-        page.content("MOVIES").embed(|e| {
-            e.title(&movie.title);
-            if !movie.link_imdb.eq(""){
-                e.description(&movie.link_imdb);
-            }
-            e.field("People:",&persons,true);
-         e
-        });
-        pages.push(page);
-    }
-
-    let msg1 = msg
-        .channel_id
-        .send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.field("All movies", all_titles, false);
-
-                e
-            });
-            m
-    });
-    msg1.await.unwrap();
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
     // Runs the menu and returns optional `Message` used to display the menu.
@@ -337,14 +284,6 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 
-/* Estava a tentar fazer uma função separada para passar o id para nick, mas n dá para ser async não sei pq (ela precisa de ser async por causa do await())
-async fn id_to_nick(ctx: &Context, msg: &Message, person: &String) -> String{
-    let g = msg.guild_id.unwrap();
-    let person: u64 = person.parse().unwrap();
-    let member = g.member(ctx, person).await.unwrap();
-    member.nick.unwrap()
-}
-*/
 
 
 #[command]
@@ -352,22 +291,11 @@ async fn id_to_nick(ctx: &Context, msg: &Message, person: &String) -> String{
 async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     let names = init_hashmap(msg, ctx).await;
     //ir ao voice channel buscar os ids
-    let mut people_vc: Vec<String> = Vec::new();
-    let guild = msg.guild(&ctx.cache).await.expect("something");
-    match guild.voice_states.get(&msg.author.id) {
-        Some(s) => {
-            let vc_id = s.channel_id.unwrap();
-            let guild = msg.guild_id.unwrap().channels(&ctx.http).await?;
-            let guild_channel = guild.get(&vc_id).unwrap();
-            let ids = guild_channel.members(&ctx.cache).await?;
-            for i in ids {
-                if !i.user.bot {
-                    people_vc.push(i.user.id.0.to_string());
-                }
-            }
-        }
-        _ => {
-            msg.channel_id.say(&ctx.http, "Erro! Não há pessoas em nenhum voice channel").await?;
+
+    let people_vc = match get_vc_people(ctx, msg).await {
+        Ok(people) => people,
+        Err(str) => {
+            msg.channel_id.say(&ctx.http, str).await?;
             return Ok(());
         }
     };
@@ -402,47 +330,44 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     //Ordenar os filmes por ordem decrescente do número de pessoas
     ok_movies.sort_by(|a, b| b.cmp(a));
 
-    //Agora tenho um Vec<Movie> é só fazer show deles (teoricamente let mut pages = Vec::new();
+    show_all_mvs(msg, ctx, &ok_movies).await;
 
-    let mut all_titles = String::new();
-    let mut pages = Vec::new();
-    for movie in ok_movies {
-        all_titles.push_str(&movie.title);
-        all_titles = all_titles + "\n";
-        let mut persons = String::new();
-        for person in &movie.people {
-            let name = names.get(person).unwrap();
-            let string = format!("{}\n", name);
-            persons.push_str(&string);
-        }
-
-        let mut page = CreateMessage::default();
-        page.content("MOVIES").embed(|e| {
-            e.title(&movie.title);
-            if !movie.link_imdb.eq(""){
-                e.description(&movie.link_imdb);
-            }
-            e.field("People:",&persons,true);
-            e
-        });
-        pages.push(page);
-    }
-
-    let msg1 = msg
-        .channel_id
-        .send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.field("All movies", all_titles, false);
-
-                e
-            });
-            m
-    });
-    msg1.await.unwrap();
+    let pages = show_mv_menu(&ok_movies, &names).await;
 
     // Creates a new menu.
     let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
     // Runs the menu and returns optional `Message` used to display the menu.
     let _ = menu.run().await?;
+    Ok(())
+}
+
+
+
+#[command]
+async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
+    let title = msg.content.replace("§movie seen ", "");
+    let title = title.replace("§mv seen ", "");
+    let title = title.trim();
+    let names = init_hashmap(msg, ctx).await;
+    let people_vc = match get_vc_people(ctx, msg).await {
+        Ok(people) => people,
+        Err(str) => {
+            msg.channel_id.say(&ctx.http, str).await?;
+            return Ok(());
+        }
+    };
+
+    let mut movies = json_to_vec_movies(msg);
+
+    let movie = match Movie::search_title(&mut movies, title.to_string()) {
+        Ok(movie) => movie,
+        Err(str) => {
+            msg.channel_id.say(&ctx.http, str).await?;
+            return Ok(());
+        }
+    };
+
+    create_review_poll(ctx, msg, movie, &names).await;
+
     Ok(())
 }
