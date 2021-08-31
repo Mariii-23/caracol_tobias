@@ -201,7 +201,7 @@ async fn me(ctx: &Context, msg: &Message) -> CommandResult {
 #[usage = "\"category\""]
 async fn show_general(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     let quotes = AllQuotes::json_to_vec_movies(msg);
-    let mut phrase = String::from("No quotes found");
+    let phrase: String;
     if args.is_empty() {
         phrase = quotes.get_one_quote_by_category_to_string(ctx, msg,CATEGORY::GENERAL).await;
     } else {
@@ -221,7 +221,7 @@ async fn show_general(ctx: &Context, msg: &Message,mut args: Args) -> CommandRes
 #[usage = "\"profs's name\""]
 async fn show_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let quotes = AllQuotes::json_to_vec_movies(msg);
-    let mut phrase = String::from("No quotes found");
+    let phrase: String;
     if args.is_empty() {
         phrase = quotes.get_one_quote_by_category_to_string(ctx, msg,CATEGORY::PROFS).await;
     } else {
@@ -242,7 +242,7 @@ async fn show_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 async fn show_members(ctx: &Context, msg: &Message) -> CommandResult {
     let person = &msg.mentions;
     let quotes = AllQuotes::json_to_vec_movies(msg);
-    let mut phrase = String::from("No quotes found");
+    let phrase: String;
     if person.is_empty() {
         phrase = quotes.get_one_quote_by_category_to_string(ctx, msg,CATEGORY::MEMBERS).await;
     } else {
@@ -268,15 +268,12 @@ async fn build(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     };
 
     let category = match args.single_quoted::<CATEGORY>() {
-    // let category = match args.single_quoted::<CATEGORY>() {
         Ok(category) => category,
         Err(_) => {
             msg.reply(ctx, "Category invalid").await?;
             return Ok(())
         }
     };
-    // let category = args.single_quoted::<String>()?;
-    // let category = CATEGORY::MEMBERS;
 
     let id = &msg.id;
 

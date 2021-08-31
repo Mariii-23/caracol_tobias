@@ -7,12 +7,14 @@ use serde::{Deserialize, Serialize};
 use crate::constantes::{EXTENSION_PATH, QUOTES_PATH};
 use crate::modules::function_aux::get_name_user_by_id;
 
-use std::fs::{write, File};
-use std::io::BufReader;
-use std::str::FromStr;
+use std::{
+    fs::{write, File},
+    io::BufReader,
+    str::FromStr,
+    collections::HashMap,
+};
 
 use rand::Rng;
-
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Debug, Hash, Clone, Copy)]
 pub enum CATEGORY {
@@ -41,14 +43,7 @@ pub struct Quote {
     pub user_id: String,
     pub nick: String,
     pub quote: String,
-    // pub date: DateTime<Utc>,
 }
-
-// impl PartialEq for Quote {
-//     fn eq(&self, other: &Self) -> bool {
-//         (self.id) == (other.id) && (self.quote.eq(&other.quote))
-//     }
-// }
 
 impl Quote {
     pub fn build(
@@ -57,7 +52,6 @@ impl Quote {
         user_id: String,
         nick: String,
         quote: String,
-        // date: DateTime<Utc>,
     ) -> Quote {
         Quote {
             category,
@@ -65,24 +59,9 @@ impl Quote {
             user_id,
             nick,
             quote,
-            // date,
         }
     }
 }
-
-// impl Ord for Quote {
-//     // categora < id < date
-//     fn cmp(&self, other: &Self) -> Ordering {
-//     }
-// }
-use std::collections::HashMap;
-
-// #[derive(Serialize, Deserialize, Debug)]
-// pub struct AllQuotes {
-//     // maybe alterar o hahMap<Categoru,...
-//     // para um array visto cada category ter um numero distinto
-//     pub quotes: Option<HashMap<CATEGORY, HashMap<String, Vec<Quote>>>>,
-// }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AllQuotes {
@@ -99,7 +78,6 @@ impl AllQuotes {
             profs: None,
         }
     }
-
 
     /*----------------- Add quotes --------------------------*/
     fn add_members(&mut self, quote: Quote)-> bool {
@@ -272,7 +250,8 @@ impl AllQuotes {
         }
     }
 
-    /*----------------- Get quotes by user id --------------------------*/
+    /*----------------- Get quotes by id --------------------------*/
+    //TODO
 
     /*----------------- Get all quotes --------------------------*/
     fn get_all_members_quotes(&self) -> Option<Vec<&Quote>> {
