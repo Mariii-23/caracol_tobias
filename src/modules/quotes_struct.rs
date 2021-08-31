@@ -9,14 +9,28 @@ use crate::modules::function_aux::get_name_user_by_id;
 
 use std::fs::{write, File};
 use std::io::BufReader;
+use std::str::FromStr;
 
 use rand::Rng;
+
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Debug, Hash, Clone, Copy)]
 pub enum CATEGORY {
     MEMBERS = 0,
     GENERAL = 1,
     PROFS = 2,
+}
+
+impl FromStr for CATEGORY {
+    type Err = ();
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        match input {
+            "MEMBERS" => Ok(CATEGORY::MEMBERS),
+            "GENERAL" => Ok(CATEGORY::GENERAL),
+            "PROFS" => Ok(CATEGORY::PROFS),
+            _ => Err(()),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Hash)]
@@ -308,8 +322,12 @@ impl AllQuotes {
     /*----------------- Struct «--» json --------------------------*/
 
     pub fn quotes_to_json(&self, msg: &Message) {
+        self.quotes_to_json_by_server_id(msg.guild_id.unwrap().to_string().as_str())
+    }
+
+    pub fn quotes_to_json_by_server_id(&self, server_id: &str) {
         let mut path = String::from(QUOTES_PATH);
-        path.push_str(msg.guild_id.unwrap().to_string().as_str());
+        path.push_str(server_id);
         path.push_str(EXTENSION_PATH);
 
         let quotes = serde_json::to_string(&self).unwrap();
@@ -317,9 +335,13 @@ impl AllQuotes {
     }
 
     pub fn json_to_vec_movies(msg: &Message) -> AllQuotes {
+        AllQuotes::json_to_vec_movies_by_server_id(msg.guild_id.unwrap().to_string().as_str())
+    }
+
+    pub fn json_to_vec_movies_by_server_id(server_id: &str) -> AllQuotes {
         let quotes = AllQuotes::new();
         let mut path = String::from(QUOTES_PATH);
-        path.push_str(msg.guild_id.unwrap().to_string().as_str());
+        path.push_str(server_id);
         path.push_str(EXTENSION_PATH);
         //Abrir o ficheiro e passar tudo para um BuffReader (é mais rapido do que passar para string)
         let f = match File::open(&path) {
