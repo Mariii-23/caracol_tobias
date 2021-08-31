@@ -12,11 +12,9 @@ use serenity::{
 use crate::modules::quotes_struct;
 use quotes_struct::*;
 
-use crate::modules::function_aux::get_name_user_by_id;
-
 #[group]
 #[help_available]
-#[commands(add,show,me,build)]
+#[commands(add,show,me)]
 // #[description = "\n"]
 // #[default_command(diamond)]
 #[prefixes("quotes","quote")]
@@ -187,48 +185,4 @@ async fn show_members(ctx: &Context, msg: &Message) -> CommandResult {
     }
     msg.reply(ctx, phrase).await?;
    Ok(())
-}
-
-#[command]
-#[max_args(5)]
-#[min_args(4)]
-// #[aliases(general)]
-// serverid (op) - category - user_id - name -  phrase
-async fn build(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
-    let server_id = if args.len() >= 5 {
-        args.single_quoted::<String>()?
-    } else {
-        String::from(msg.guild_id.unwrap().to_string().as_str())
-    };
-
-    let category = match args.single_quoted::<CATEGORY>() {
-    // let category = match args.single_quoted::<CATEGORY>() {
-        Ok(category) => category,
-        Err(_) => {
-            msg.reply(ctx, "Category invalid").await?;
-            return Ok(())
-        }
-    };
-    // let category = args.single_quoted::<String>()?;
-    // let category = CATEGORY::MEMBERS;
-
-    let id = &msg.id;
-
-    let user_id = args.single_quoted::<String>()?;
-    let name = args.single_quoted::<String>()?;
-    let phrase = args.single_quoted::<String>()?;
-
-    let quote = Quote::build(
-        category,
-        id.to_string(),
-        user_id,
-        name,
-        phrase
-    );
-
-    let mut all_quotes = AllQuotes::json_to_vec_movies_by_server_id(&server_id);
-    all_quotes.add(quote);
-    all_quotes.quotes_to_json_by_server_id(&server_id);
-    msg.reply(ctx,"Quote added\n").await?;
-    Ok(())
 }
