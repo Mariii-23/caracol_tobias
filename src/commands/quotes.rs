@@ -1,4 +1,3 @@
-// 0⃣ 1⃣ 2⃣ 3⃣  4⃣ 5⃣ 6⃣  7⃣ 8⃣  9⃣  🔟
 extern crate serenity;
 use serenity::{
     framework::standard::{
@@ -15,6 +14,10 @@ use quotes_struct::*;
 
 #[group]
 #[help_available(false)]
+<<<<<<< HEAD
+=======
+// #[help_available]
+>>>>>>> 5b3980587f0373d770f81b2cdd241c76acee3b2a
 #[commands(add,show,me,build)]
 #[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
 #[default_command(show)]
@@ -43,13 +46,19 @@ async fn add(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
                 nick,
                 phrase
             );
-            all_quotes.add(quote);
-            all_quotes.quotes_to_json(msg);
-            msg.reply(ctx,"Quote added\n").await?;
+
+            match all_quotes.add(quote) {
+                true => {
+                    all_quotes.quotes_to_json(msg);
+                    msg.reply(ctx,"Quote added\n").await?;
+                },
+                false => {
+                    msg.reply(ctx,"Quote not added\nAlready exists\n").await?;
+                }
+            }
             Ok(())
         },
     }
-    // add_members(ctx, msg, args).await
 }
 
 #[command]
@@ -91,9 +100,15 @@ async fn add_members(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
         )
     };
 
-    all_quotes.add(quote);
-    all_quotes.quotes_to_json(msg);
-    msg.reply(ctx,"Quote added\n").await?;
+    match all_quotes.add(quote) {
+        true => {
+            all_quotes.quotes_to_json(msg);
+            msg.reply(ctx,"Quote added\n").await?;
+        },
+        false => {
+            msg.reply(ctx,"Quote not added\nAlready exists\n").await?;
+        }
+    }
     Ok(())
 }
 
@@ -116,9 +131,15 @@ async fn add_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
         nick,
         phrase );
 
-    all_quotes.add(quote);
-    all_quotes.quotes_to_json(msg);
-    msg.reply(ctx,"Quote added\n").await?;
+    match all_quotes.add(quote) {
+        true => {
+            all_quotes.quotes_to_json(msg);
+            msg.reply(ctx,"Quote added\n").await?;
+        },
+        false => {
+            msg.reply(ctx,"Quote not added\nAlready exists\n").await?;
+        }
+    }
     Ok(())
 }
 
@@ -140,9 +161,15 @@ async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
         user_id,
         phrase );
 
-    all_quotes.add(quote);
-    all_quotes.quotes_to_json(msg);
-    msg.reply(ctx,"Quote added\n").await?;
+    match all_quotes.add(quote) {
+        true => {
+            all_quotes.quotes_to_json(msg);
+            msg.reply(ctx,"Quote added\n").await?;
+        },
+        false => {
+            msg.reply(ctx,"Quote not added\nAlready exists\n").await?;
+        }
+    }
     Ok(())
 }
 
@@ -269,8 +296,14 @@ async fn build(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     );
 
     let mut all_quotes = AllQuotes::json_to_vec_movies_by_server_id(&server_id);
-    all_quotes.add(quote);
-    all_quotes.quotes_to_json_by_server_id(&server_id);
-    msg.reply(ctx,"Quote added\n").await?;
+    match all_quotes.add(quote) {
+        true => {
+            all_quotes.quotes_to_json_by_server_id(&server_id);
+            msg.reply(ctx,"Quote added\n").await?;
+        },
+        false => {
+            msg.reply(ctx,"Quote not added\nAlready exists\n").await?;
+        }
+    }
     Ok(())
 }
