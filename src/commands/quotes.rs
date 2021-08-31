@@ -1,3 +1,4 @@
+// 0⃣ 1⃣ 2⃣ 3⃣  4⃣ 5⃣ 6⃣  7⃣ 8⃣  9⃣  🔟
 extern crate serenity;
 use serenity::{
     framework::standard::{
@@ -12,27 +13,52 @@ use serenity::{
 use crate::modules::quotes_struct;
 use quotes_struct::*;
 
-use crate::modules::function_aux::get_name_user_by_id;
-
 #[group]
 #[help_available]
 #[commands(add,show,me,build)]
-// #[description = "\n"]
-// #[default_command(diamond)]
+#[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
+#[default_command(show)]
 #[prefixes("quotes","quote")]
 struct Quotes;
 
 #[command]
 #[sub_commands(add_members,add_profs,add_general)]
-//TODO alguns parametros nao estao corretos
+#[description = "Add one quote to the server in category \"MEMBERS\"\nYou can reply one msg with §quotes add"]
+#[example="\"Quote\""]
 async fn add(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    add_members(ctx, msg, args).await
+    match &msg.referenced_message {
+        None => add_members(ctx, msg, args).await,
+        Some(referenced_message) => {
+            let mut all_quotes = AllQuotes::json_to_vec_movies(msg);
+            let phrase = String::from(&referenced_message.content);
+            let nick = match &referenced_message.author.nick_in(&ctx, msg.guild_id.unwrap()).await {
+                None => String::from(&referenced_message.author.name),
+                Some(name) => name.to_string(),
+            };
+
+            let quote =Quote::build(
+                CATEGORY::MEMBERS,
+                referenced_message.id.to_string(),
+                referenced_message.author.id.to_string(),
+                nick,
+                phrase
+            );
+            all_quotes.add(quote);
+            all_quotes.quotes_to_json(msg);
+            msg.reply(ctx,"Quote added\n").await?;
+            Ok(())
+        },
+    }
+    // add_members(ctx, msg, args).await
 }
 
 #[command]
 #[max_args(2)]
 #[min_args(1)]
 #[aliases(members)]
+#[description = "Add one quote to the server in category \"MEMBERS\"\n"]
+#[example="\"Quote\""]
+#[example="\"Quote\" @person"]
 async fn add_members(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     let mut all_quotes = AllQuotes::json_to_vec_movies(msg);
@@ -76,6 +102,8 @@ async fn add_members(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 #[max_args(2)]
 #[min_args(2)]
 #[aliases(profs)]
+#[description = "Add one quote to the server in category \"PROFS\"\n"]
+#[example="\"Quote\" \"profs\""]
 async fn add_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     let nick = args.single_quoted::<String>()?;
@@ -98,6 +126,8 @@ async fn add_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 #[max_args(2)]
 #[min_args(2)]
 #[aliases(general)]
+#[description = "Add one quote to the server in category \"GENERAL\"\n"]
+#[example="\"Quote\" \"category\""]
 async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     let user_id = args.single_quoted::<String>()?;
@@ -119,9 +149,9 @@ async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 
 /* show quotes */
 
-/* fnction debug */
 #[command]
 #[sub_commands(show_general,show_profs,show_members)]
+#[description = "Show one quote\n"]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
     let quotes = AllQuotes::json_to_vec_movies(msg);
     let phrase = quotes.get_one_quote_to_string(ctx, msg).await;
@@ -131,6 +161,7 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
 
 
 #[command]
+#[description = "Show one quote that is yours\n"]
 async fn me(ctx: &Context, msg: &Message) -> CommandResult {
     let quotes = AllQuotes::json_to_vec_movies(msg);
     let phrase = quotes.get_one_quote_by_user_id_to_string(ctx, msg,msg.author.id.to_string(), CATEGORY::MEMBERS).await;
@@ -141,6 +172,9 @@ async fn me(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[max_args(1)]
 #[aliases(general)]
+#[description = "Show one quote in the category \"GENERAL\"\n"]
+#[usage = ""]
+#[usage = "\"category\""]
 async fn show_general(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     let quotes = AllQuotes::json_to_vec_movies(msg);
     let mut phrase = String::from("No quotes found");
@@ -158,6 +192,9 @@ async fn show_general(ctx: &Context, msg: &Message,mut args: Args) -> CommandRes
 #[command]
 #[max_args(1)]
 #[aliases(profs)]
+#[description = "Show one quote in the category \"PROFS\"\n"]
+#[usage = ""]
+#[usage = "\"profs's name\""]
 async fn show_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let quotes = AllQuotes::json_to_vec_movies(msg);
     let mut phrase = String::from("No quotes found");
@@ -175,6 +212,9 @@ async fn show_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 #[command]
 #[max_args(1)]
 #[aliases(members)]
+#[description = "Show one quote in the category \"MEMBERS\"\n"]
+#[usage = ""]
+#[usage = "@person"]
 async fn show_members(ctx: &Context, msg: &Message) -> CommandResult {
     let person = &msg.mentions;
     let quotes = AllQuotes::json_to_vec_movies(msg);
@@ -192,7 +232,9 @@ async fn show_members(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[max_args(5)]
 #[min_args(4)]
-// #[aliases(general)]
+#[help_available(false)]
+#[description = "Add one quote with all information\n"]
+#[usage = "\"server_id\" \"CATEGORY\" \"user_id\" \"name\" \"quote\""]
 // serverid (op) - category - user_id - name -  phrase
 async fn build(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     let server_id = if args.len() >= 5 {
