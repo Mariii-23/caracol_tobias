@@ -8,7 +8,7 @@ pub fn simple_options() -> MenuOptions {
     ];
     let options = MenuOptions {
         controls,
-        timeout: 120.0,
+        timeout: 3600.0,
         ..Default::default()
     };
     options
