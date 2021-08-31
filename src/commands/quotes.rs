@@ -14,10 +14,7 @@ use quotes_struct::*;
 
 #[group]
 #[help_available(false)]
-<<<<<<< HEAD
-=======
 // #[help_available]
->>>>>>> 5b3980587f0373d770f81b2cdd241c76acee3b2a
 #[commands(add,show,me,build)]
 #[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
 #[default_command(show)]
