@@ -100,13 +100,22 @@ impl AllQuotes {
         }
     }
 
+
     /*----------------- Add quotes --------------------------*/
-    fn add_members(&mut self, quote: Quote) {
+    fn add_members(&mut self, quote: Quote)-> bool {
         let id = String::from(&quote.user_id);
 
         match &mut self.members {
             Some(map_category) => match map_category.get_mut(&id) {
                 Some(vec_quotes) => {
+                    // validation
+                    for elem in vec_quotes.iter() {
+                        if elem.id.to_lowercase().eq(&quote.id.to_lowercase()) ||
+                            elem.quote.to_lowercase().eq(&quote.quote.to_lowercase()) {
+                                return false;
+                            }
+                    }
+
                     vec_quotes.push(quote);
                 }
                 None => {
@@ -121,14 +130,23 @@ impl AllQuotes {
                 self.members = Some(map_id);
             }
         };
+        true
     }
 
-    fn add_profs(&mut self, quote: Quote) {
+    fn add_profs(&mut self, quote: Quote) -> bool {
         let id = String::from(&quote.user_id);
 
         match &mut self.profs {
             Some(map_category) => match map_category.get_mut(&id) {
                 Some(vec_quotes) => {
+                    // validation
+                    for elem in vec_quotes.iter() {
+                        if elem.id.to_lowercase().eq(&quote.id.to_lowercase()) ||
+                            elem.quote.to_lowercase().eq(&quote.quote.to_lowercase()) {
+                                return false;
+                            }
+                    }
+
                     vec_quotes.push(quote);
                 }
                 None => {
@@ -143,22 +161,32 @@ impl AllQuotes {
                 self.profs = Some(map_id);
             }
         };
+        true
     }
 
-    fn add_general(&mut self, quote: Quote) {
+    fn add_general(&mut self, quote: Quote) -> bool {
         match &mut self.general {
             None => self.general = Some(vec![quote]),
-            Some(quotes) => quotes.push(quote),
+            Some(quotes) => {
+                for elem in quotes.iter() {
+                    if elem.id.to_lowercase().eq(&quote.id.to_lowercase()) ||
+                        elem.quote.to_lowercase().eq(&quote.quote.to_lowercase()) {
+                            return false;
+                        }
+                }
+                quotes.push(quote)
+            },
         }
+        true
     }
 
-    pub fn add(&mut self, quote: Quote) {
+    pub fn add(&mut self, quote: Quote) -> bool {
         match quote.category {
             CATEGORY::MEMBERS => self.add_members(quote),
             CATEGORY::PROFS => self.add_profs(quote),
             CATEGORY::GENERAL => self.add_general(quote),
             // _ => (),
-        };
+        }
     }
 
     /* ----------- remove ------------- */
