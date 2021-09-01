@@ -1,3 +1,4 @@
+#![crate_name = "Quotes Structs"]
 extern crate serenity;
 use serenity::{model::channel::Message, prelude::Context};
 
@@ -17,9 +18,13 @@ use std::{
 use rand::Rng;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Debug, Hash, Clone, Copy)]
+/// Quotes can have a category
 pub enum CATEGORY {
+    /// Represents people in a server
     MEMBERS = 0,
+    /// Represents things in general
     GENERAL = 1,
+    /// Represents teachers
     PROFS = 2,
 }
 
@@ -37,15 +42,36 @@ impl FromStr for CATEGORY {
 
 #[derive(Serialize, Deserialize, Debug, Hash)]
 // #[derive(Eq, Serialize, Deserialize, Debug)]
+/// Represents of a quote
 pub struct Quote {
+    /// One quote have a category
     pub category: CATEGORY,
+    /// One quote must have one unique id
     pub id: String,
+    /// user id of the person who said the quote
     pub user_id: String,
+    /// nick of the person who said the quote
     pub nick: String,
+    /// Quote :)
     pub quote: String,
 }
 
 impl Quote {
+    /// Returns one quote with the data fields
+    /// # Arguments
+    ///
+    /// * `category` - One of the possible categories
+    /// * `id` - unique id
+    /// * `user_id` - user id of the person who said the quote
+    /// * `nick` - nick of the person who said the quote
+    /// * `quote` - phrase
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use quotes_struct::Quote;
+    /// let quote = Quote::build(CATEGORY::MEMBERS,String::new("1234"),String::new("5678"),String::new("Caracol Tobias"),String::new("Hello World"));
+    /// ```
     pub fn build(
         category: CATEGORY,
         id: String,
@@ -64,13 +90,18 @@ impl Quote {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+/// Struct that stores all quotes by categories
 pub struct AllQuotes {
+    /// Stores the quotes in members's category with a HashMap, where the key is the user's id and the values is all their quotes.
     pub members: Option<HashMap<String, Vec<Quote>>>,
+    /// Stores the quotes in general's category with a vector
     pub general: Option<Vec<Quote>>,
+    /// Stores the quotes in profs's category with a HashMap, where the key is the teacher's name(user id) and the values is all their quotes.
     pub profs: Option<HashMap<String, Vec<Quote>>>,
 }
 
 impl AllQuotes {
+    /// Returns a new AllQuotes empty
     pub fn new() -> AllQuotes {
         AllQuotes {
             members: None,
@@ -242,6 +273,7 @@ impl AllQuotes {
         None
     }
 
+    /// Returns all quotes through a given user id and category
     pub fn get_by_user_id(&self, id: String, category: CATEGORY) -> Option<Vec<&Quote>> {
         match category {
             CATEGORY::MEMBERS => self.get_in_members_by_user_id(id),
@@ -304,17 +336,20 @@ impl AllQuotes {
 
     /*---------- get ONE quote by category ------*/
     /* get one quote by user id */
+    /// Returns one quote through a given user id and category
     pub async fn get_one_quote_by_user_id_to_string(&self, ctx: &Context, msg: &Message,id: String, category: CATEGORY) -> String {
         let quotes= self.get_by_user_id(id, category);
         get_one_quote_to_string(ctx, msg, quotes).await
     }
 
     /* get one quote by category */
+    /// Returns one quote through a given category
     pub async fn get_one_quote_by_category_to_string(&self, ctx: &Context, msg: &Message,category: CATEGORY) -> String {
           let quotes = self.get_all_quote_by_category(category);
           get_one_quote_to_string(ctx, msg, quotes).await
     }
 
+    /// Returns a quote from one of the existing categories
     pub async fn get_one_quote_to_string(&self, ctx: &Context, msg: &Message) -> String {
         let number = rand::thread_rng().gen_range(0,3);
         let quotes = match number {
@@ -328,10 +363,12 @@ impl AllQuotes {
 
     /*----------------- Struct «--» json --------------------------*/
 
+    /// Converts a struct `AllQuotes` to a json file titled with the server id contained in the given `Message`.
     pub fn quotes_to_json(&self, msg: &Message) {
         self.quotes_to_json_by_server_id(msg.guild_id.unwrap().to_string().as_str())
     }
 
+    /// Converts a struct `AllQuotes` to a json file titled with the server id given.
     pub fn quotes_to_json_by_server_id(&self, server_id: &str) {
         let mut path = String::from(QUOTES_PATH);
         path.push_str(server_id);
@@ -341,10 +378,12 @@ impl AllQuotes {
         write(path, &quotes).expect("Error write Movies on json file");
     }
 
+    /// Converts a json file titled with the server id contained in the given `Message` to a struct `AllQuotes`.
     pub fn json_to_vec_movies(msg: &Message) -> AllQuotes {
         AllQuotes::json_to_vec_movies_by_server_id(msg.guild_id.unwrap().to_string().as_str())
     }
 
+    /// Converts a json file titled with the server id given to a struct `AllQuotes`.
     pub fn json_to_vec_movies_by_server_id(server_id: &str) -> AllQuotes {
         let quotes = AllQuotes::new();
         let mut path = String::from(QUOTES_PATH);
@@ -372,6 +411,7 @@ impl AllQuotes {
 }
 
 /* function aux */
+/// Choose a random quote from given quote vector and convert it to string
 async fn get_one_quote_to_string(ctx: &Context, msg: &Message, vec: Option<Vec<&Quote>>) -> String {
     match vec {
         None => String::from("No quotes found"),

@@ -145,7 +145,7 @@ async fn add_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 #[min_args(2)]
 #[aliases(general)]
 #[description = "Add one quote to the server in category \"GENERAL\"\n"]
-#[example="\"Quote\" \"category\""]
+#[example="\"Quote\" \"description\""]
 async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     let user_id = args.single_quoted::<String>()?;
