@@ -13,8 +13,8 @@ use crate::modules::quotes_struct;
 use quotes_struct::*;
 
 #[group]
+// #[help_available(false)]
 #[help_available]
-// #[help_available]
 #[commands(add,show,me,build,number_quotes)]
 #[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
 #[default_command(show)]
@@ -178,15 +178,15 @@ async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 #[description = "Show one quote\n"]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
     let person = &msg.mentions;
-    let quotes = AllQuotes::json_to_vec_movies(msg);
-    let phrase: String;
-    if person.is_empty() {
-        phrase = quotes.get_one_quote_to_string(ctx, msg).await;
+    let all_quotes = AllQuotes::json_to_vec_movies(msg);
+    let quotes: Option<Vec<&Quote>>;
+    if person.is_empty(){
+        quotes = all_quotes.get_one_random_quote();
     } else {
         let id = person[0].id.to_string();
-        phrase = quotes.get_one_quote_by_user_id_to_string(ctx, msg,id, CATEGORY::MEMBERS).await;
+        quotes = all_quotes.get_by_user_id(id,CATEGORY::MEMBERS);
     }
-    msg.reply(ctx, phrase).await?;
+    send_one_quote_randow(ctx, msg, quotes).await;
     Ok(())
 }
 
@@ -194,9 +194,10 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[description = "Show one quote that is yours\n"]
 async fn me(ctx: &Context, msg: &Message) -> CommandResult {
-    let quotes = AllQuotes::json_to_vec_movies(msg);
-    let phrase = quotes.get_one_quote_by_user_id_to_string(ctx, msg,msg.author.id.to_string(), CATEGORY::MEMBERS).await;
-    msg.reply(ctx, phrase).await?;
+    let all_quotes = AllQuotes::json_to_vec_movies(msg);
+    let id = msg.author.id.to_string();
+    let quotes= all_quotes.get_by_user_id(id, CATEGORY::MEMBERS);
+    send_one_quote_randow(ctx, msg, quotes).await;
     Ok(())
 }
 
@@ -207,16 +208,15 @@ async fn me(ctx: &Context, msg: &Message) -> CommandResult {
 #[usage = ""]
 #[usage = "\"category\""]
 async fn show_general(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
-    let quotes = AllQuotes::json_to_vec_movies(msg);
-    let phrase: String;
+    let all_quotes = AllQuotes::json_to_vec_movies(msg);
+    let quotes: Option<Vec<&Quote>>;
     if args.is_empty() {
-        phrase = quotes.get_one_quote_by_category_to_string(ctx, msg,CATEGORY::GENERAL).await;
+        quotes = all_quotes.get_all_quote_by_category(CATEGORY::GENERAL);
     } else {
-        //TODO pode se mudar para ser sem ""
         let id = args.single_quoted::<String>()?;
-        phrase = quotes.get_one_quote_by_user_id_to_string(ctx, msg,id, CATEGORY::GENERAL).await;
+        quotes = all_quotes.get_by_user_id(id,CATEGORY::GENERAL);
     }
-    msg.reply(ctx, phrase).await?;
+    send_one_quote_randow(ctx,msg,quotes).await;
     Ok(())
 }
 
@@ -227,16 +227,15 @@ async fn show_general(ctx: &Context, msg: &Message,mut args: Args) -> CommandRes
 #[usage = ""]
 #[usage = "\"profs's name\""]
 async fn show_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let quotes = AllQuotes::json_to_vec_movies(msg);
-    let phrase: String;
+    let all_quotes = AllQuotes::json_to_vec_movies(msg);
+    let quotes: Option<Vec<&Quote>>;
     if args.is_empty() {
-        phrase = quotes.get_one_quote_by_category_to_string(ctx, msg,CATEGORY::PROFS).await;
+        quotes = all_quotes.get_all_quote_by_category(CATEGORY::PROFS);
     } else {
-        //TODO pode se mudar para ser sem ""
         let id = args.single_quoted::<String>()?;
-        phrase = quotes.get_one_quote_by_user_id_to_string(ctx, msg,id, CATEGORY::PROFS).await;
+        quotes = all_quotes.get_by_user_id(id,CATEGORY::PROFS);
     }
-    msg.reply(ctx, phrase).await?;
+    send_one_quote_randow(ctx,msg,quotes).await;
     Ok(())
 }
 
@@ -248,16 +247,16 @@ async fn show_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 #[usage = "@person"]
 async fn show_members(ctx: &Context, msg: &Message) -> CommandResult {
     let person = &msg.mentions;
-    let quotes = AllQuotes::json_to_vec_movies(msg);
-    let phrase: String;
+    let all_quotes = AllQuotes::json_to_vec_movies(msg);
+    let quotes: Option<Vec<&Quote>>;
     if person.is_empty() {
-        phrase = quotes.get_one_quote_by_category_to_string(ctx, msg,CATEGORY::MEMBERS).await;
+        quotes = all_quotes.get_all_quote_by_category(CATEGORY::MEMBERS);
     } else {
         let id = person[0].id.to_string();
-        phrase = quotes.get_one_quote_by_user_id_to_string(ctx, msg,id, CATEGORY::MEMBERS).await;
+        quotes = all_quotes.get_by_user_id(id,CATEGORY::MEMBERS);
     }
-    msg.reply(ctx, phrase).await?;
-   Ok(())
+    send_one_quote_randow(ctx,msg,quotes).await;
+    Ok(())
 }
 
 #[command]

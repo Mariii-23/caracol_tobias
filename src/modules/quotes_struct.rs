@@ -87,7 +87,17 @@ impl Quote {
             quote,
         }
     }
+
+    // pub fn clone(&self) -> Quote {
+    //     Quote::build(
+    //         self.category,
+    //                  String::from(&self.id) ,
+    //                  String::from(&self.user_id) ,
+    //                  String::from(&self.nick) ,
+    //                  String::from(&self.quote))
+    // }
 }
+
 
 #[derive(Serialize, Deserialize, Debug)]
 /// Struct that stores all quotes by categories
@@ -336,29 +346,40 @@ impl AllQuotes {
 
     /*---------- get ONE quote by category ------*/
     /* get one quote by user id */
-    /// Returns one quote through a given user id and category
-    pub async fn get_one_quote_by_user_id_to_string(&self, ctx: &Context, msg: &Message,id: String, category: CATEGORY) -> String {
-        let quotes= self.get_by_user_id(id, category);
-        get_one_quote_to_string(ctx, msg, quotes).await
-    }
+    // /// Returns one quote through a given user id and category
+    // pub async fn get_one_quote_by_user_id_to_string(&self, ctx: &Context, msg: &Message,id: String, category: CATEGORY) -> String {
+    //     let quotes= self.get_by_user_id(id, category);
+    //     get_one_quote_to_string(ctx, msg, quotes).await
+    // }
 
     /* get one quote by category */
-    /// Returns one quote through a given category
-    pub async fn get_one_quote_by_category_to_string(&self, ctx: &Context, msg: &Message,category: CATEGORY) -> String {
-          let quotes = self.get_all_quote_by_category(category);
-          get_one_quote_to_string(ctx, msg, quotes).await
-    }
+    // /// Returns one quote through a given category
+    // pub async fn get_one_quote_by_category_to_string(&self, ctx: &Context, msg: &Message,category: CATEGORY) -> String {
+    //       let quotes = self.get_all_quote_by_category(category);
+    //       get_one_quote_to_string(ctx, msg, quotes).await
+    // }
+
+    // /// Returns a quote from one of the existing categories
+    // pub async fn get_one_quote_to_string(&self, ctx: &Context, msg: &Message) -> String {
+    //     let number = rand::thread_rng().gen_range(0,3);
+    //     let quotes = match number {
+    //         0 => self.get_all_quote_by_category(CATEGORY::MEMBERS),
+    //         1 => self.get_all_quote_by_category(CATEGORY::GENERAL),
+    //         2 => self.get_all_quote_by_category(CATEGORY::PROFS),
+    //         _ => None,
+    //     };
+    //     get_one_quote_to_string(ctx, msg, quotes).await
+    // }
 
     /// Returns a quote from one of the existing categories
-    pub async fn get_one_quote_to_string(&self, ctx: &Context, msg: &Message) -> String {
+    pub fn get_one_random_quote(&self) -> Option<Vec<&Quote>> {
         let number = rand::thread_rng().gen_range(0,3);
-        let quotes = match number {
+        match number {
             0 => self.get_all_quote_by_category(CATEGORY::MEMBERS),
             1 => self.get_all_quote_by_category(CATEGORY::GENERAL),
             2 => self.get_all_quote_by_category(CATEGORY::PROFS),
             _ => None,
-        };
-        get_one_quote_to_string(ctx, msg, quotes).await
+        }
     }
 
     /*---------- Number of quotes ------*/
@@ -386,7 +407,7 @@ impl AllQuotes {
                 for vec in map_id.values() {
                     count += vec.len();
                 };
-               return count
+               count
             }
         }
     }
@@ -410,9 +431,9 @@ impl AllQuotes {
     /*---------- Number of all quotes ------*/
 
     pub fn get_all_number_quotes(&self) -> usize {
-        &self.get_number_quotes_in_general() +
-        &self.get_number_quotes_in_members() +
-        &self.get_number_quotes_in_profs()
+        self.get_number_quotes_in_general() +
+        self.get_number_quotes_in_members() +
+        self.get_number_quotes_in_profs()
     }
 
     /*---------- Number of quotes by category and user id ------*/
@@ -515,21 +536,91 @@ impl AllQuotes {
 
 /* function aux */
 /// Choose a random quote from given quote vector and convert it to string
-async fn get_one_quote_to_string(ctx: &Context, msg: &Message, vec: Option<Vec<&Quote>>) -> String {
+// async fn get_one_quote_to_string(ctx: &Context, msg: &Message, vec: Option<Vec<&Quote>>) -> String {
+//     match vec {
+//         None => String::from("No quotes found"),
+//         Some(vec) => {
+//             let len = vec.len();
+//             let quote = vec.get(rand::thread_rng().gen_range(0, len));
+//             match quote {
+//                 None => String::from("No quotes found"),
+//                 Some(quote) => {
+//                     // println!("{}",&quote.quote);
+//                     let name = get_name_user_by_id(msg, ctx, &quote.user_id).await;
+//                     if (name.is_empty() || quote.nick.eq(&name)){
+//                         format!("> {}\n> {}", quote.quote, quote.nick)
+//                     } else {
+//                         format!("> {}\n> {} ({})", quote.quote, quote.nick, name)
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
+
+
+// async fn get_one_quote_randow(ctx: &Context, msg: &Message, vec: Option<Vec<Quote>>) -> Option<Quote> {
+//     match vec {
+//         None => None,
+//         Some(vec) => {
+//             let len = vec.len();
+//             let quote = vec.get(rand::thread_rng().gen_range(0, len));
+
+//             match quote {
+//                 None => None,
+//                 Some(quote) => {
+//                     Some(quote.clone())
+//                 }
+//             }
+//         }
+//     }
+// }
+
+pub async fn send_one_quote_randow(ctx: &Context, msg: &Message, vec: Option<Vec<&Quote>>) {
     match vec {
-        None => String::from("No quotes found"),
+        None => {
+            msg.reply(ctx, "No quotes found").await.unwrap();
+        },
         Some(vec) => {
             let len = vec.len();
             let quote = vec.get(rand::thread_rng().gen_range(0, len));
+
             match quote {
-                None => String::from("No quotes found"),
+                None => {
+                    msg.reply(ctx, "No quotes found").await.unwrap();
+                },
                 Some(quote) => {
-                    // println!("{}",&quote.quote);
+                    let person = &msg.mentions;
                     let name = get_name_user_by_id(msg, ctx, &quote.user_id).await;
-                    format!("\"{}\" - {} ({})", quote.quote, quote.nick, name)
+                    let msg = msg.channel_id.send_message(&ctx.http, |m| {
+                        m.embed(|e| {
+                            use serenity::utils::Colour;
+                            e.colour(Colour::BLITZ_BLUE);
+
+                            e.title(&quote.quote);
+                            // e.description(format!("**{}**",&quote.quote));
+
+                            let phrase: String;
+                            if (name.is_empty() || quote.nick.eq(&name)) {
+                                phrase = String::from(&quote.nick);
+                            } else {
+                                phrase = format!("{} ({})", quote.nick, name);
+                            }
+
+                            if person.is_empty(){
+                                e.footer(|f| f.text(phrase));
+                            }else{
+                                e.footer(|f|
+                                         f.icon_url(person[0].avatar_url().unwrap())
+                                         .text(phrase));
+                            }
+                            e
+                        });
+                        m
+                    });
+                    msg.await.unwrap();
                 }
             }
         }
     }
 }
-
