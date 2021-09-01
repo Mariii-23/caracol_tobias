@@ -19,7 +19,12 @@
 //--- Fazer uma função como a de cima mas com ping às pessoas em vez de ver o voice channel
 
 extern crate serenity;
-use serenity::{builder::CreateMessage,framework::standard::{
+use std::thread;
+use std::time::Duration;
+
+use tokio::time::sleep;
+
+use serenity::{builder::CreateMessage, client::bridge::gateway::ShardClientMessage, framework::standard::{
         macros::{command, group},
          CommandResult,
 }, model::channel::Message, prelude::*};
@@ -342,13 +347,20 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 
-
+//TODO:
+//Remover o filme da json
+//Adicionar ao outro
 #[command]
 async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
+    //Ir buscar o titulo do filme
     let title = msg.content.replace("§movie seen ", "");
     let title = title.replace("§mv seen ", "");
     let title = title.trim();
+    
+    //Hash com os ids como key e os nomes como value 
     let names = init_hashmap(msg, ctx).await;
+
+    //Buscar as pessoas do vc(isto ainda não está a ser usado)
     let people_vc = match get_vc_people(ctx, msg).await {
         Ok(people) => people,
         Err(str) => {
@@ -357,8 +369,10 @@ async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
         }
     };
 
+    //ir buscar o ficheiro dos filmes que queremos ver
     let mut movies = json_to_vec_movies(msg);
 
+    //ver se o nome colocado na msg existe e retorna o filme
     let movie = match Movie::search_title(&mut movies, title.to_string()) {
         Ok(movie) => movie,
         Err(str) => {
@@ -367,7 +381,48 @@ async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
         }
     };
 
-    create_review_poll(ctx, msg, movie, &names).await;
+    //criar uma mensagem do filme com reaction de 1 a 10
+    let message = create_review_poll(ctx, msg, movie, &names).await;
+
+    //Esperar 15 mins para as pessoas votarem
+    sleep(Duration::from_secs(10)).await;
+
+    //função que vai às reações todas e associa um user com a nota respetiva
+    let people_reviews = get_vec_reviews(ctx, &message).await;
+
+    //Calcular a média
+    let mut average: f32 = 0.0;
+    for person in &people_reviews {
+        if !person.1.is_empty() {
+            average += person.0 as f32;
+        }
+    }
+    let average = average/people_reviews.len() as f32;
+
+    //Tive de chamar outra vez os movies pq o fucking search_title lixa isto tudo
+    let mut movies = json_to_vec_movies(msg);
+
+    //remover o filme do ficheiro inicial
+    for (index, m) in movies.iter().enumerate() {
+        if m.title.to_uppercase().eq(&title.to_uppercase()) {
+            movies.remove(index);
+            break;
+        }
+    }
+
+    //Guardar o ficheiro inicial sem o filme
+    vec_movie_to_json(movies, msg);
+
+    //Abrir o ficheiro de filmes vistos
+    let mut movies_seen = json_to_vec_movies_seen(msg);
+
+    //Criar um novo MovieSeen e adicioná-lo ao Vec
+    let imdb_id = &movie.imdb_id;
+    let movie_seen = MovieSeen::create_movie(title.to_string(), people_reviews, imdb_id.to_owned(), average);
+    movies_seen.push(movie_seen);
+
+    //passar para o ficheiro
+    vec_movie_seen_to_json(movies_seen, msg);
 
     Ok(())
 }

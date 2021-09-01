@@ -18,6 +18,15 @@ pub struct Movie {
     pub imdb_id: String
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MovieSeen {
+    pub title: String,
+    pub ratings: Vec<(i32, String)>,
+    pub average: f32,
+    pub link_imdb: String,
+    pub imdb_id: String,
+}
+
 impl Movie {
     pub fn create_movie(title: String, people: Vec<String>, imdb_id: String) -> Movie {
         let mut link_imdb = String::from("https://www.imdb.com/title/");
@@ -79,6 +88,20 @@ impl PartialEq for Movie {
     }
 }
 
+impl MovieSeen {
+    pub fn create_movie(title: String, ratings: Vec<(i32, String)>, imdb_id: String, average: f32) -> MovieSeen {
+        let mut link_imdb = String::from("https://www.imdb.com/title/");
+        link_imdb.push_str(imdb_id.as_str());
+        MovieSeen {
+            title,
+            ratings,
+            average,
+            link_imdb,
+            imdb_id
+        }
+    }
+}
+
 
 // pub async fn search_by_name(name: String) -> Result<SearchResults, Error> {
 //     omdb::search(name).apikey(APIKEY).get().await
@@ -119,37 +142,35 @@ pub fn json_to_vec_movies(msg: &Message) -> Vec<Movie>{
             Vec::new()
         }
     };
-    // let mut contents = String::new();
-    // //Agora passar o BuffReader para string
-    // buf_reader.read_to_string(&mut contents).unwrap();
-    // if contents.len() == 0 {
-    //     return movies;
-    // }
-    // //Dividir o ficheiro em um vetor em que cada elemento é uma linha do ficheiro
-    // let file: Vec<&str> = contents.split("\n").collect();
-    // for f in &file {
-    //     if f.len() == 0 {
-    //         return movies;
-    //     }
-    //     let aux: Vec<&str> = f.split(";").collect();
-    //     let p: Vec<&str> = aux[1].split(",").collect();
-    //     let mut aux2 = Vec::new();
-    // //     for a in p {
-    //         aux2.push(a.to_string());
-    //     }
-    //     let imdb_id  = aux[2].to_string();
-    //     let mut link_imdb = String::from("https://www.imdb.com/title/");
-    //     link_imdb.push_str(imdb_id.as_str());
-    //     let m = Movie {
-    //         title: aux[0].to_string(),
-    //         people: aux2,
-    //         link_imdb,
-    //         imdb_id
-    //     };
-    //     movies.push(m);
-    // }
     movies
 }
+pub fn json_to_vec_movies_seen(msg: &Message) -> Vec<MovieSeen>{
+
+    let movies = Vec::new();
+    let mut path = String::from(MOVIES_PATH);
+    path.push_str(msg.guild_id.unwrap().to_string().as_str());
+    path.push_str("_seen");
+    path.push_str(EXTENSION_PATH);
+    //Abrir o ficheiro e passar tudo para um BuffReader (é mais rapido do que passar para string)
+    let f = match File::open(&path) {
+        Ok(file) => file,
+        Err(_) => {
+            File::create(path).unwrap();
+            return movies;
+        }
+    };
+    let buf_reader = BufReader::new(f);
+
+    let movies: Vec<MovieSeen> = match  serde_json::from_reader(buf_reader){
+        Ok(movies) => movies,
+        Err(err) => {
+            println!("\nError reading json file {} :\n {}",path,err);
+            Vec::new()
+        }
+    };
+    movies
+}
+
 
 pub fn vec_movie_to_json(movies: Vec<Movie>, msg: &Message) {
 
@@ -157,26 +178,16 @@ pub fn vec_movie_to_json(movies: Vec<Movie>, msg: &Message) {
     path.push_str(msg.guild_id.unwrap().to_string().as_str());
     path.push_str(EXTENSION_PATH);
 
-    // let mut file = match File::create(path){
-    //     Ok(file) => file,
-    //     Err(_) => panic!("Problema a abrir o ficheiro!"),
-    // };
+    let movies = serde_json::to_string(&movies).unwrap();
+    write(path,&movies).expect("Error write Movies on json file");
+}
 
-    //for i in movies {
-    //    let mut line = String::new();
-    //    line.push_str(i.title.as_str().trim());
-    //    line.push_str(";");
-    //    for (index, j) in i.people.iter().enumerate() {
-    //        line.push_str(j.as_str().trim());
-    //        if index != i.people.len() - 1 {
-    //            line.push_str(",");
-    //        }
-    //    }
-    //    line.push_str(";");
-    //    line.push_str(i.imdb_id.as_str().trim());
-    //    file.write(line.as_bytes()).expect("Erro ao ecrever no ficheiro!");
-    //    file.write("\n".as_bytes()).expect("Erro no \n?");
-    //}
+pub fn vec_movie_seen_to_json(movies: Vec<MovieSeen>, msg: &Message) {
+
+    let mut path = String::from(MOVIES_PATH);
+    path.push_str(msg.guild_id.unwrap().to_string().as_str());
+    path.push_str("_seen");
+    path.push_str(EXTENSION_PATH);
 
     let movies = serde_json::to_string(&movies).unwrap();
     write(path,&movies).expect("Error write Movies on json file");
@@ -273,9 +284,78 @@ pub async fn get_vc_people(ctx: &Context, msg: &Message) -> Result<Vec<String>, 
     Ok(people_vc)
 }
 
+pub async fn get_vec_reviews(ctx: &Context, msg: &Message) -> Vec<(i32, String)> {
+    let one = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let two = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let three = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let four = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let five = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let six = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let seven = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let eight = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let nine = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let ten = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+
+    let mut reviews= Vec::new();
+    for user in one {
+        if !user.bot {
+            reviews.push((1, user.id.to_string()));
+        }
+    }
+    for user in two {
+        if !user.bot {
+            reviews.push((2, user.id.to_string()));
+        }
+    }
+    for user in three {
+        if !user.bot {
+            reviews.push((3, user.id.to_string()));
+        }
+    }
+    for user in four {
+        if !user.bot {
+            reviews.push((4, user.id.to_string()));
+        }
+    }
+    for user in five {
+        if !user.bot {
+            reviews.push((5, user.id.to_string()));
+        }
+    }
+    for user in six {
+        if !user.bot {
+            reviews.push((6, user.id.to_string()));
+        }
+    }
+    for user in seven {
+        if !user.bot {
+            reviews.push((7, user.id.to_string()));
+        }
+    }
+    for user in eight {
+        if !user.bot {
+            reviews.push((8, user.id.to_string()));
+        }
+    }
+
+    for user in nine {
+        if !user.bot {
+            reviews.push((9, user.id.to_string()));
+        }
+    }
+    for user in ten {
+        if !user.bot {
+            reviews.push((10, user.id.to_string()));
+        }
+    }
+
+    reviews
+}
 
 
-pub async fn create_review_poll(ctx: &Context, msg: &Message, movie: &Movie, names: &HashMap<String, String>) {
+
+
+pub async fn create_review_poll(ctx: &Context, msg: &Message, movie: &Movie, names: &HashMap<String, String>) -> Message {
     let emoji: Vec<ReactionType> = vec![ReactionType::Unicode("1️⃣".to_string()), ReactionType::Unicode("2️⃣".to_string()),
                                         ReactionType::Unicode("3️⃣".to_string()), ReactionType::Unicode("4️⃣".to_string()),
                                         ReactionType::Unicode("5️⃣".to_string()), ReactionType::Unicode("6️⃣".to_string()),
@@ -285,7 +365,7 @@ pub async fn create_review_poll(ctx: &Context, msg: &Message, movie: &Movie, nam
     let id = &movie.imdb_id;
     println!("{}", id);
     let info = movie_with_id(id.to_owned()).await.unwrap();
-    msg
+    let message =msg
         .channel_id
         .send_message(&ctx.http, |m| {
             m.embed(|e| {
@@ -298,5 +378,6 @@ pub async fn create_review_poll(ctx: &Context, msg: &Message, movie: &Movie, nam
                 e
             });
             m.reactions(emoji)
-    }).await.unwrap();   
+    }).await.unwrap();  
+    message
 }

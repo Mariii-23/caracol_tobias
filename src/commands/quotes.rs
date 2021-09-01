@@ -13,7 +13,7 @@ use crate::modules::quotes_struct;
 use quotes_struct::*;
 
 #[group]
-#[help_available(false)]
+#[help_available]
 // #[help_available]
 #[commands(add,show,me,build,number_quotes)]
 #[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
