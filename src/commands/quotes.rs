@@ -15,7 +15,7 @@ use quotes_struct::*;
 #[group]
 #[help_available(false)]
 // #[help_available]
-#[commands(add,show,me,build)]
+#[commands(add,show,me,build,number_quotes)]
 #[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
 #[default_command(show)]
 #[prefixes("quotes","quote")]
@@ -306,5 +306,86 @@ async fn build(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
             msg.reply(ctx,"Quote not added\nAlready exists\n").await?;
         }
     }
+    Ok(())
+}
+
+#[command]
+#[sub_commands(number_quotes_general,number_quotes_members,number_quotes_profs)]
+#[max_args(1)]
+#[description = "Show the number of all quotes\nYou can mention someone and we will show ho many quotes,they have"]
+#[usage = "@members"]
+#[aliases("n","number")]
+async fn number_quotes(ctx: &Context, msg: &Message) -> CommandResult {
+    let quotes = AllQuotes::json_to_vec_movies(msg);
+    let person = &msg.mentions;
+    let number: usize;
+    if person.is_empty() {
+        number = quotes.get_all_number_quotes();
+    } else {
+        let user_id = person[0].id.to_string();
+        number = quotes.get_number_quotes_by_user_in_category(user_id, CATEGORY::MEMBERS);
+    }
+    let phrase = format!("Exists **{}** quote(s)",number);
+    msg.reply(ctx, phrase).await?;
+    Ok(())
+}
+
+
+#[command]
+#[max_args(1)]
+#[description = "Shows the number of all quotes in MEMBERS's Category\nYou can mention someone and see how many quotes that person have\n"]
+#[usage = "@members"]
+#[aliases("members,me")]
+async fn number_quotes_members(ctx: &Context, msg: &Message) -> CommandResult {
+    let quotes = AllQuotes::json_to_vec_movies(msg);
+    let person = &msg.mentions;
+    let number: usize;
+    if person.is_empty() {
+        number = quotes.get_number_quotes_in_category(CATEGORY::MEMBERS);
+    } else {
+        let user_id = person[0].id.to_string();
+        number = quotes.get_number_quotes_by_user_in_category(user_id, CATEGORY::MEMBERS);
+    }
+    let phrase = format!("Exists **{}** quote(s)",number);
+    msg.reply(ctx, phrase).await?;
+    Ok(())
+}
+
+
+#[command]
+#[max_args(1)]
+#[description = "Shows the number of all quotes in Profs's Category\nYou can give one teacher's name and see how many quotes that teacher have\n"]
+#[usage = "\"teacher's name\""]
+#[aliases("profs")]
+async fn number_quotes_profs(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
+    let quotes = AllQuotes::json_to_vec_movies(msg);
+    let number: usize;
+    if args.is_empty() {
+        number = quotes.get_number_quotes_in_category(CATEGORY::PROFS);
+    } else {
+        let user_id = args.single_quoted::<String>()?;
+        number = quotes.get_number_quotes_by_user_in_category(user_id, CATEGORY::PROFS);
+    }
+    let phrase = format!("Exists **{}** quote(s)",number);
+    msg.reply(ctx, phrase).await?;
+    Ok(())
+}
+
+#[command]
+#[max_args(1)]
+#[description = "Shows the number of all quotes in General's Category\nYou can give one description and see how many quotes exists\n"]
+#[usage = "\"descrition\""]
+#[aliases("general")]
+async fn number_quotes_general(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
+    let quotes = AllQuotes::json_to_vec_movies(msg);
+    let number: usize;
+    if args.is_empty() {
+        number = quotes.get_number_quotes_in_category(CATEGORY::GENERAL);
+    } else {
+        let user_id = args.single_quoted::<String>()?;
+        number = quotes.get_number_quotes_by_user_in_category(user_id, CATEGORY::GENERAL);
+    }
+    let phrase = format!("Exists **{}** quote(s)",number);
+    msg.reply(ctx, phrase).await?;
     Ok(())
 }

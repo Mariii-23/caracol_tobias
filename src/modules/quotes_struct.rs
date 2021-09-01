@@ -361,6 +361,109 @@ impl AllQuotes {
         get_one_quote_to_string(ctx, msg, quotes).await
     }
 
+    /*---------- Number of quotes ------*/
+
+    /*---------- Number of all quotes by category ------*/
+    fn get_number_quotes_in_members(&self) -> usize {
+        match &self.members {
+            None => 0,
+            Some(map_id) => {
+                let mut count = 0;
+                for vec in map_id.values() {
+                    count += vec.len();
+                };
+                count
+            }
+        }
+    }
+
+
+    fn get_number_quotes_in_profs(&self) -> usize {
+        match &self.profs {
+            None => 0,
+            Some(map_id) => {
+                let mut count = 0;
+                for vec in map_id.values() {
+                    count += vec.len();
+                };
+               return count
+            }
+        }
+    }
+
+    fn get_number_quotes_in_general(&self) -> usize {
+        match &self.general {
+            None => 0,
+            Some(vec_quotes) => {
+                vec_quotes.len()
+            }
+        }
+    }
+
+    pub fn get_number_quotes_in_category(&self, category: CATEGORY) -> usize {
+        match category {
+            CATEGORY::MEMBERS => self.get_number_quotes_in_members(),
+            CATEGORY::GENERAL => self.get_number_quotes_in_general(),
+            CATEGORY::PROFS => self.get_number_quotes_in_profs(),
+        }
+    }
+    /*---------- Number of all quotes ------*/
+
+    pub fn get_all_number_quotes(&self) -> usize {
+        &self.get_number_quotes_in_general() +
+        &self.get_number_quotes_in_members() +
+        &self.get_number_quotes_in_profs()
+    }
+
+    /*---------- Number of quotes by category and user id ------*/
+    fn get_number_quotes_by_user_id_in_members(&self, user_id: String) -> usize {
+        match &self.members {
+            None => 0,
+            Some(map_id) => match map_id.get(&user_id) {
+                None => 0,
+                Some(quotes) =>{
+                    quotes.len()
+                }
+            },
+        }
+    }
+
+
+    fn get_number_quotes_by_user_id_in_profs(&self, user_id: String) -> usize {
+        match &self.profs {
+            None => 0,
+            Some(map_id) => match map_id.get(&user_id) {
+                None => 0,
+                Some(quotes) =>{
+                    quotes.len()
+                }
+            },
+        }
+    }
+
+    fn get_number_quotes_by_user_id_in_general(&self, user_id: String) -> usize {
+        match &self.general {
+            None => 0,
+            Some(vec_quotes) => {
+                let mut count = 0;
+                for quote in vec_quotes {
+                    if quote.user_id.eq(&user_id) {
+                        count += 1;
+                    }
+                }
+                count
+            }
+        }
+    }
+
+    pub fn get_number_quotes_by_user_in_category(&self,user_id: String, category: CATEGORY) -> usize {
+        match category {
+            CATEGORY::MEMBERS => self.get_number_quotes_by_user_id_in_members(user_id),
+            CATEGORY::GENERAL => self.get_number_quotes_by_user_id_in_general(user_id),
+            CATEGORY::PROFS => self.get_number_quotes_by_user_id_in_profs(user_id),
+        }
+    }
+
     /*----------------- Struct «--» json --------------------------*/
 
     /// Converts a struct `AllQuotes` to a json file titled with the server id contained in the given `Message`.
