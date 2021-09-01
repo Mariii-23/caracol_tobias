@@ -177,8 +177,15 @@ async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 #[sub_commands(show_general,show_profs,show_members)]
 #[description = "Show one quote\n"]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
+    let person = &msg.mentions;
     let quotes = AllQuotes::json_to_vec_movies(msg);
-    let phrase = quotes.get_one_quote_to_string(ctx, msg).await;
+    let phrase: String;
+    if person.is_empty() {
+        phrase = quotes.get_one_quote_to_string(ctx, msg).await;
+    } else {
+        let id = person[0].id.to_string();
+        phrase = quotes.get_one_quote_by_user_id_to_string(ctx, msg,id, CATEGORY::MEMBERS).await;
+    }
     msg.reply(ctx, phrase).await?;
     Ok(())
 }
