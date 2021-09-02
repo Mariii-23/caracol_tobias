@@ -4,3 +4,5 @@ pub const QUOTES_PATH: &str = "files/quotes/";
 pub const EXTENSION_PATH: &str = ".json";
 // pub const QUOTES_PATH: &str = "./files/quotes.json";
 pub const APIKEY: &str = "b9a36ff2";
+
+pub const SHOW_QUOTES_PER_PAGE: usize = 10;

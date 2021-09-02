@@ -288,7 +288,7 @@ async fn which(ctx: &Context, msg: &Message) -> CommandResult {
 #[max_args(1)]
 async fn avatar(ctx: &Context, msg: &Message) -> CommandResult {
     let person = &msg.mentions;
-    if person.len() == 0  && msg.content.is_empty() {
+    if person.is_empty()  && msg.content.is_empty() {
         msg.channel_id.say(&ctx.http, "Error! Command is wrong! Try §help").await?;
         return Ok(());
     }
@@ -298,7 +298,7 @@ async fn avatar(ctx: &Context, msg: &Message) -> CommandResult {
             use serenity::utils::Colour;
             e.colour(Colour::BLITZ_BLUE);
 
-            if person.len() == 0 {
+            if person.is_empty() {
                 e.title(&msg.author.name);
                 e.image(&msg.author.avatar_url().unwrap());
             }

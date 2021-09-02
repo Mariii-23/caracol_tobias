@@ -1,11 +1,11 @@
 extern crate serenity;
 
-use std::path::Path;
+// use std::path::Path;
 use crate::modules::pagination;
 
 use serenity::{
     builder::CreateMessage,
-    http::AttachmentType,
+    // http::AttachmentType,
     framework::standard::{
         macros::{command, group},
          CommandResult,
@@ -55,7 +55,7 @@ async fn ex1( ctx: &Context, msg: &Message) -> CommandResult{
 
                e
            });
-           m.add_file(AttachmentType::Path(Path::new("./images/ferris_eyes.png")));
+           // m.add_file(AttachmentType::Path(Path::new("./images/ferris_eyes.png")));
            m
    });
 

@@ -1,12 +1,21 @@
-#![crate_name = "Quotes Structs"]
+// #![crate_name = "Quotes Structs"]
 extern crate serenity;
-use serenity::{model::channel::Message, prelude::Context};
+use serenity::{
+    builder::CreateMessage,
+    model::channel::Message,
+    prelude::Context,
+    utils::Colour
+};
+use serenity_utils::menu::Menu;
 
 extern crate serde_json;
 use serde::{Deserialize, Serialize};
 
-use crate::constantes::{EXTENSION_PATH, QUOTES_PATH};
-use crate::modules::function_aux::get_name_user_by_id;
+use crate::constantes::{EXTENSION_PATH, QUOTES_PATH,SHOW_QUOTES_PER_PAGE};
+use crate::modules::{
+    function_aux::get_name_user_by_id,
+    pagination
+};
 
 use std::{
     fs::{write, File},
@@ -14,6 +23,7 @@ use std::{
     str::FromStr,
     collections::HashMap,
 };
+
 
 use rand::Rng;
 
@@ -344,6 +354,35 @@ impl AllQuotes {
         }
     }
 
+    pub fn get_all_quotes(&self) -> Option<Vec<&Quote>> {
+        let quotes_members = self.get_all_quote_by_category(CATEGORY::MEMBERS);
+        let quotes_general = self.get_all_quote_by_category(CATEGORY::GENERAL);
+        let quotes_profs = self.get_all_quote_by_category(CATEGORY::PROFS);
+
+        let mut quotes: Vec<&Quote> = Vec::new();
+        match quotes_members {
+            None => (),
+            Some(members) => quotes.extend(members),
+        };
+
+        match quotes_general {
+            None => (),
+            Some(general) => quotes.extend(general),
+        };
+
+        match quotes_profs {
+            None => (),
+            Some(profs) => quotes.extend(profs),
+        };
+
+        if quotes.is_empty() {
+            None
+        } else {
+            Some(quotes)
+        }
+    }
+
+
     /*---------- get ONE quote by category ------*/
     /* get one quote by user id */
     // /// Returns one quote through a given user id and category
@@ -601,7 +640,7 @@ pub async fn send_one_quote_randow(ctx: &Context, msg: &Message, vec: Option<Vec
                             // e.description(format!("**{}**",&quote.quote));
 
                             let phrase: String;
-                            if (name.is_empty() || quote.nick.eq(&name)) {
+                            if name.is_empty() || quote.nick.eq(&name) {
                                 phrase = String::from(&quote.nick);
                             } else {
                                 phrase = format!("{} ({})", quote.nick, name);
@@ -621,6 +660,50 @@ pub async fn send_one_quote_randow(ctx: &Context, msg: &Message, vec: Option<Vec
                     msg.await.unwrap();
                 }
             }
+        }
+    }
+}
+
+pub async fn send_quotes_menu(ctx: &Context, msg: &Message, vec: Option<Vec<&Quote>>) {
+    match vec {
+        None => {
+            msg.reply(ctx, "No quotes found" ).await.unwrap();
+        },
+        Some(quotes) => {
+            let n_quotes = SHOW_QUOTES_PER_PAGE;
+            let len = quotes.len();
+            let n_full_pages= len / n_quotes;
+            let rest = len - n_full_pages*n_quotes;
+            let mut pages = Vec::new();
+            if n_full_pages != 0 {
+                for i in 0..n_full_pages {
+                    let mut page = CreateMessage::default();
+                    page.content("").embed(|e| {
+                        e.colour(Colour::BLITZ_BLUE);
+                        for l in 0..n_quotes{
+                            let quote = &quotes[i*n_quotes+l];
+                            e.field(&quote.quote,&quote.nick,false);
+                        }
+                        e
+                    });
+                    pages.push(page);
+                }
+            }
+
+            if rest != 0 {
+                let mut page = CreateMessage::default();
+                page.content("").embed(|e| {
+                    e.colour(Colour::BLITZ_BLUE);
+                    for l in 0..rest {
+                        let quote = &quotes[l+n_full_pages*n_quotes];
+                        e.field(&quote.quote,&quote.nick,false);
+                    }
+                    e
+                });
+                pages.push(page);
+            }
+            let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
+            menu.run().await.unwrap();
         }
     }
 }
