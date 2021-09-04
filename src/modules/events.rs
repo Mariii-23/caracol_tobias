@@ -52,6 +52,14 @@ pub async fn before_hook(_: &Context, msg: &Message, command_name: &str) -> bool
 }
 
 #[hook]
+pub async fn unrecognised_command_hook(ctx: &Context, msg: &Message, unrecognised_command_name: &str) {
+    msg.reply(ctx,"Unknown command. Check help command for more information").await.unwrap();
+    println!("Get an unknown command \"{}\" by user: {:?}\nFull command: {}",
+        unrecognised_command_name, msg.author.name, msg.content
+    );
+}
+
+#[hook]
 pub async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
     match error {
         DispatchError::CheckFailed(s, reason) => {
