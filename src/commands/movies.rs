@@ -40,7 +40,7 @@ use crate::modules::function_aux::init_hashmap;
 
 
 #[group]
-#[commands(add, rm, add_person, rm_person, show, choose_vc, seen)]
+#[commands(add, rm, add_person, rm_person, show, choose_vc, seen, seen_show, present, unpresent)]
 #[prefixes("movie","mv")]
 #[description("movie stuff")]
 struct Movies;
@@ -254,7 +254,7 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
     let title = msg.content.replace("§movie show", "");
     let title = title.replace("§mv show", "");
     println!("{}", title);
-    if !title.eq("") {
+    if !title.eq("") && !title.contains("present") && !title.contains("unpresent") {
         let title = title.trim().to_string();
         let movie = match Movie::search_title(&mut movies, title) {
             Ok(movie) => movie,
@@ -361,13 +361,13 @@ async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
     let names = init_hashmap(msg, ctx).await;
 
     //Buscar as pessoas do vc(isto ainda não está a ser usado)
-    let people_vc = match get_vc_people(ctx, msg).await {
-        Ok(people) => people,
-        Err(str) => {
-            msg.channel_id.say(&ctx.http, str).await?;
-            return Ok(());
-        }
-    };
+    // let people_vc = match get_vc_people(ctx, msg).await {
+    //     Ok(people) => people,
+    //     Err(str) => {
+    //         msg.channel_id.say(&ctx.http, str).await?;
+    //        return Ok(());
+    //    }
+    //};
 
     //ir buscar o ficheiro dos filmes que queremos ver
     let mut movies = json_to_vec_movies(msg);
@@ -385,7 +385,7 @@ async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
     let message = create_review_poll(ctx, msg, movie, &names).await;
 
     //Esperar 15 mins para as pessoas votarem
-    sleep(Duration::from_secs(10)).await;
+    sleep(Duration::from_secs(900)).await;
 
     //função que vai às reações todas e associa um user com a nota respetiva
     let people_reviews = get_vec_reviews(ctx, &message).await;
@@ -419,10 +419,113 @@ async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
     //Criar um novo MovieSeen e adicioná-lo ao Vec
     let imdb_id = &movie.imdb_id;
     let movie_seen = MovieSeen::create_movie(title.to_string(), people_reviews, imdb_id.to_owned(), average);
+    //mostar o filme adicionado
+    show_one_mv_seen(ctx, msg, &movie_seen, &names).await;
     movies_seen.push(movie_seen);
 
     //passar para o ficheiro
     vec_movie_seen_to_json(movies_seen, msg);
 
+
     Ok(())
+}
+
+
+#[command]
+async fn seen_show(ctx: &Context, msg: &Message) -> CommandResult {
+    let mut movies = json_to_vec_movies_seen(msg);
+    let mut names = init_hashmap(msg, ctx).await;
+    let title = msg.content.replace("§movie seen_show", "");
+    let title = title.replace("§mv seen_show", "");
+    println!("{}", title);
+    if !title.eq("") {
+        let title = title.trim().to_string();
+        let movie = match MovieSeen::search_title(&mut movies, title) {
+            Ok(movie) => movie,
+            Err(title) => {
+                msg.channel_id.say(&ctx.http, format!("Error, movie not found: {}", title)).await?;
+                return Ok(());
+            }
+        };
+        show_one_mv_seen(ctx, msg, movie, &names).await; 
+        return Ok(());
+        
+
+    }
+
+
+    let guild = msg.guild_id.unwrap();//.members(&ctx.http, None, None).await.expect("Falha aqui não sei pq");
+    let members = guild.members(&ctx.http, Some(100), None).await?;
+    for member in members {
+        names.insert(member.user.id.to_string(), member.user.name.to_string());
+    }
+
+
+    show_all_mvs_seen(msg, ctx, &movies).await;
+    let pages = show_mv_menu_seen(&movies, &names).await;
+
+    // Creates a new menu.
+    let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
+    // Runs the menu and returns optional `Message` used to display the menu.
+    let _ = menu.run().await?;
+
+    Ok(())
+}
+
+
+#[command]
+async fn present (ctx: &Context, msg: &Message) -> CommandResult {
+    let movies = json_to_vec_movies(msg);
+    let names = init_hashmap(msg, ctx).await;
+
+    let id = msg.author.id.to_string();
+    let mut movies_ok = Vec::new();
+    for movie in movies {
+            println!("title: {}; ID: {}; People: {:?}", &movie.title, id, &movie.people);
+            if movie.people.contains(&id) {
+                movies_ok.push(movie);
+            }
+    }
+    println!("len: {}", movies_ok.len());
+
+    
+    show_all_mvs(msg, ctx, &movies_ok).await;
+    let pages = show_mv_menu(&movies_ok, &names).await;
+
+    // Creates a new menu.
+    let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
+    // Runs the menu and returns optional `Message` used to display the menu.
+    let _ = menu.run().await?;
+
+    Ok(())
+
+}
+
+
+#[command]
+async fn unpresent (ctx: &Context, msg: &Message) -> CommandResult {
+    let movies = json_to_vec_movies(msg);
+    let names = init_hashmap(msg, ctx).await;
+
+    let id = msg.author.id.to_string();
+    let mut movies_ok = Vec::new();
+    for movie in movies {
+            println!("title: {}; ID: {}; People: {:?}", &movie.title, id, &movie.people);
+            if !movie.people.contains(&id) {
+                movies_ok.push(movie);
+            }
+    }
+    println!("len: {}", movies_ok.len());
+
+    
+    show_all_mvs(msg, ctx, &movies_ok).await;
+    let pages = show_mv_menu(&movies_ok, &names).await;
+
+    // Creates a new menu.
+    let menu = Menu::new(ctx, msg, &pages, pagination::simple_options());
+    // Runs the menu and returns optional `Message` used to display the menu.
+    let _ = menu.run().await?;
+
+    Ok(())
+
 }

@@ -100,6 +100,25 @@ impl MovieSeen {
             imdb_id
         }
     }
+    fn get_people(&self, names: &HashMap<String, String>) -> String {
+        let mut people = String::new();
+        for person in &self.ratings {
+        let name = names.get(&person.1).unwrap();
+        let string = format!("{}: {}\n", name, person.0);
+        people.push_str(&string);
+    }
+    people.push_str(format!("average: {}", self.average).as_str());
+    people
+    }
+
+    pub fn search_title(movies: &mut Vec<MovieSeen>, title: String) -> Result<&MovieSeen, String> {
+    for movie in movies{
+        if movie.title.to_uppercase().eq(&title.to_uppercase()) {
+            return Ok(movie);
+        }
+    }
+    Err(title)
+    }
 }
 
 
@@ -202,6 +221,15 @@ fn get_all_mv_titles(movies: &Vec<Movie>) -> String {
     all_titles
 }
 
+fn get_all_mv_titles_seen(movies: &Vec<MovieSeen>) -> String {
+    let mut all_titles = String::new();
+    for movie in movies {
+        all_titles.push_str(&movie.title);
+        all_titles = all_titles + "\n";
+    }
+    all_titles
+}
+
 pub async fn show_one_mv(msg: &Message, ctx: &Context, movie: &Movie, names: &HashMap<String, String>) {
     let id = &movie.imdb_id;
     println!("{}", id);
@@ -235,7 +263,47 @@ pub async fn show_all_mvs(msg: &Message, ctx: &Context, movies: &Vec<Movie>) {
     }).await.unwrap();
 }  
 
+pub async fn show_all_mvs_seen(msg: &Message, ctx: &Context, movies: &Vec<MovieSeen>) {
+    msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.field("All movies", get_all_mv_titles_seen(&movies), false);
+
+                e
+            });
+            m
+    }).await.unwrap();
+}  
+
 pub async fn show_mv_menu<'a>(movies: &Vec<Movie>, names: &HashMap<String, String>) -> Vec<CreateMessage<'a>> {
+    let mut pages = Vec::new();
+
+    for movie in movies {
+        let id = &movie.imdb_id;
+        println!("{}", id);
+        let info = movie_with_id(id.to_owned()).await.unwrap();
+        let people = movie.get_people(names);
+        let mut page = CreateMessage::default();
+        page.content("MOVIES").embed(|e| {
+            e.title(&movie.title);
+            if !movie.link_imdb.eq(""){
+                e.description(&movie.link_imdb);
+            }
+            e.field("People:",&people,true);
+            e.image(info.poster);
+            e.description(info.plot);
+
+         e
+        });
+        pages.push(page);
+
+    }
+    pages
+}
+
+
+pub async fn show_mv_menu_seen<'a>(movies: &Vec<MovieSeen>, names: &HashMap<String, String>) -> Vec<CreateMessage<'a>> {
     let mut pages = Vec::new();
 
     for movie in movies {
@@ -286,15 +354,15 @@ pub async fn get_vc_people(ctx: &Context, msg: &Message) -> Result<Vec<String>, 
 
 pub async fn get_vec_reviews(ctx: &Context, msg: &Message) -> Vec<(i32, String)> {
     let one = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let two = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let three = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let four = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let five = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let six = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let seven = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let eight = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let nine = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
-    let ten = msg.reaction_users(&ctx.http, ReactionType::Unicode("1️⃣".to_string()), None, None).await.unwrap();
+    let two = msg.reaction_users(&ctx.http, ReactionType::Unicode("2️⃣".to_string()), None, None).await.unwrap();
+    let three = msg.reaction_users(&ctx.http, ReactionType::Unicode("3️⃣".to_string()), None, None).await.unwrap();
+    let four = msg.reaction_users(&ctx.http, ReactionType::Unicode("4️⃣".to_string()), None, None).await.unwrap();
+    let five = msg.reaction_users(&ctx.http, ReactionType::Unicode("5️⃣".to_string()), None, None).await.unwrap();
+    let six = msg.reaction_users(&ctx.http, ReactionType::Unicode("6️⃣".to_string()), None, None).await.unwrap();
+    let seven = msg.reaction_users(&ctx.http, ReactionType::Unicode("7️⃣".to_string()), None, None).await.unwrap();
+    let eight = msg.reaction_users(&ctx.http, ReactionType::Unicode("8️⃣".to_string()), None, None).await.unwrap();
+    let nine = msg.reaction_users(&ctx.http, ReactionType::Unicode("9️⃣".to_string()), None, None).await.unwrap();
+    let ten = msg.reaction_users(&ctx.http, ReactionType::Unicode("🔟".to_string()), None, None).await.unwrap();
 
     let mut reviews= Vec::new();
     for user in one {
@@ -380,4 +448,26 @@ pub async fn create_review_poll(ctx: &Context, msg: &Message, movie: &Movie, nam
             m.reactions(emoji)
     }).await.unwrap();  
     message
+}
+
+
+
+pub async fn show_one_mv_seen(ctx: &Context, msg: &Message, movie: &MovieSeen, names: &HashMap<String, String>) {
+    let id = &movie.imdb_id;
+    println!("{}", id);
+    let info = movie_with_id(id.to_owned()).await.unwrap();
+    msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|e| {
+                e.title(&movie.title);
+                e.description(&movie.link_imdb);
+                e.field("People", movie.get_people(names), true);
+                e.image(info.poster);
+                e.description(info.plot);
+
+                e
+            });
+            m
+    }).await.unwrap();
 }
