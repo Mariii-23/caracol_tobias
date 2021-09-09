@@ -8,20 +8,23 @@ use serenity::{
 };
 use tracing::{error, info};
 
+use crate::constantes::STATUS_PHRASE;
+
 pub struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, _: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         info!("Connected as {}", ready.user.name);
         println!("Connected as {}", ready.user.name);
 
-     // use serenity::model::gateway::Activity;
-     // use serenity::model::user::OnlineStatus;
+        use serenity::model::gateway::Activity;
+        // use serenity::model::user::OnlineStatus;
+        ctx.online().await;
+        ctx.set_activity(Activity::listening(STATUS_PHRASE)).await;
 
-     //    let activity = Activity::playing("Hiii bitchessss");
-     //    let status = OnlineStatus::DoNotDisturb;
-
-     //    ctx.set_presence(Some(activity), status);
+        // let activity = Activity::listening(constantes::STATUS_PHRASE);
+        // let status = OnlineStatus::DoNotDisturb;
+        // ctx.set_presence(Some(activity), status);
     }
 }
 

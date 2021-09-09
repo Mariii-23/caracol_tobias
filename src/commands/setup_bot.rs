@@ -8,7 +8,7 @@ use serenity::{framework::standard::{
 
 
 #[group]
-#[commands(listen,play,stream,watch,compete)]
+#[commands(listen,play,stream,watch,compete,status_do_not_disturb,status_iddle,status_online,status_invisible)]
 #[help_available(false)]
 #[prefixes("bot","setup")]
 #[description = "Setup bot\n"]
@@ -56,5 +56,34 @@ async fn compete(ctx: &Context, _msg: &Message, args: Args) -> CommandResult {
     let name = args.message();
     ctx.set_activity(Activity::competing(&name)).await;
 
+    Ok(())
+}
+
+
+#[command]
+#[aliases("online")]
+async fn status_online(ctx: &Context, _msg: &Message) -> CommandResult {
+    ctx.online().await;
+    Ok(())
+}
+
+#[command]
+#[aliases("iddle")]
+async fn status_iddle(ctx: &Context, _msg: &Message) -> CommandResult {
+    ctx.idle().await;
+    Ok(())
+}
+
+#[command]
+#[aliases("invisible")]
+async fn status_invisible(ctx: &Context, _msg: &Message) -> CommandResult {
+    ctx.invisible().await;
+    Ok(())
+}
+
+#[command]
+#[aliases("dnd","do_not_disturb")]
+async fn status_do_not_disturb(ctx: &Context, _msg: &Message) -> CommandResult {
+    ctx.dnd().await;
     Ok(())
 }
