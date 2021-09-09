@@ -279,7 +279,7 @@ async fn show_members(ctx: &Context, msg: &Message) -> CommandResult {
 /* show all quotes */
 
 #[command]
-#[aliases("all")]
+#[aliases("all,ls,list")]
 #[sub_commands(show_all_general,show_all_profs,show_all_members)]
 #[description = "Show all quotes\n"]
 async fn show_all(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
