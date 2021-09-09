@@ -45,7 +45,8 @@ struct General;
 #[description = "Just react to your hi\n"]
 #[aliases(hello, Hello, Hi)]
  async fn hi(ctx: &Context, msg: &Message) -> CommandResult {
-    msg.reply(&ctx, "HIIIII").await?;
+    let phrase = format!("HIIII {}",&msg.author.name);
+    msg.reply(&ctx, phrase).await?;
     // msg.reply(&ctx, msg.author_nick(&ctx).await.unwrap()).await?;
     // msg.reply(&ctx, &msg.author.name).await?;
     // msg.reply(&ctx, &msg.member.unwrap().nick.unwrap()).await?;
