@@ -1,6 +1,5 @@
 #+TITLE: HELLOOOOOOOO
 
-
 * Introduction
 This is a simple Discord bot written in async rust using serenity.
 Some topic:
@@ -12,9 +11,11 @@ Some topic:
 - rust and cargo is required
 
 * Configure the build settings:
-The progamme needs a file named ".env" with the token of the bot.
-Here we have a example of a file [[file:.envExample][.env]]
-
+- This progam needs some configurations, you can run your [[file:start.sh][script]] that will do this for you. We recommend that you read before run.
+#+begin_src bash
+bash start.sh
+#+end_src
+- The progam needs a file named ".env" with the token of the bot. Here we have a example of a file [[file:.envExample][.env]]
 * Run
 #+begin_src bash
 cargo run
