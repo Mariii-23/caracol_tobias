@@ -18,7 +18,7 @@ use quotes_struct::*;
 #[commands(add,show,me,build,number_quotes,show_all)]
 #[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
 #[default_command(show)]
-#[prefixes("quotes","quote")]
+#[prefixes("quotes","quote","q")]
 struct Quotes;
 
 #[command]

@@ -41,7 +41,7 @@ use crate::modules::function_aux::init_hashmap;
 
 #[group]
 #[commands(add, rm, add_person, rm_person, show, choose_vc, seen, seen_show, present, unpresent)]
-#[prefixes("movie","mv")]
+#[prefixes("movie","mv","movies")]
 #[description("movie stuff")]
 struct Movies;
 
