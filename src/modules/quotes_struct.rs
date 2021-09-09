@@ -53,17 +53,19 @@ impl FromStr for CATEGORY {
 #[derive(Serialize, Deserialize, Debug, Hash)]
 // #[derive(Eq, Serialize, Deserialize, Debug)]
 /// Represents of a quote
+/// The fields are private to ensure that after their creation the "contract"
+/// is still maintained, and none of the fields are empty.
 pub struct Quote {
     /// One quote have a category
-    pub category: CATEGORY,
+    category: CATEGORY,
     /// One quote must have one unique id
-    pub id: String,
+    id: String,
     /// user id of the person who said the quote
-    pub user_id: String,
+    user_id: String,
     /// nick of the person who said the quote
-    pub nick: String,
+    nick: String,
     /// Quote :)
-    pub quote: String,
+    quote: String,
 }
 
 impl Quote {
@@ -89,6 +91,11 @@ impl Quote {
         nick: String,
         quote: String,
     ) -> Quote {
+
+        if id.is_empty() || user_id.is_empty() || quote.is_empty() {
+            panic!("Some of the given values are empty! Error creating Quote")
+        }
+
         Quote {
             category,
             id,
@@ -105,6 +112,17 @@ impl Quote {
     //                  String::from(&self.user_id) ,
     //                  String::from(&self.nick) ,
     //                  String::from(&self.quote))
+    // }
+
+
+    // pub fn id(&self) -> String {
+    //    String::from(&self.id)
+    // }
+    // pub fn user_id(&self) -> String {
+    //    String::from(&self.user_id)
+    // }
+    // pub fn quote(&self) -> String {
+    //    String::from(&self.quote)
     // }
 }
 
@@ -633,7 +651,6 @@ pub async fn send_one_quote_randow(ctx: &Context, msg: &Message, vec: Option<Vec
                     let name = get_name_user_by_id(msg, ctx, &quote.user_id).await;
                     let msg = msg.channel_id.send_message(&ctx.http, |m| {
                         m.embed(|e| {
-                            use serenity::utils::Colour;
                             e.colour(Colour::BLITZ_BLUE);
 
                             e.title(&quote.quote);

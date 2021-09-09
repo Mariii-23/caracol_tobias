@@ -1,7 +1,7 @@
 extern crate serenity;
 use serenity::{
     framework::standard::{
-        Args, Delimiter,
+        Args,
         macros::{command, group},
         CommandResult,
     },
@@ -36,7 +36,12 @@ async fn add(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
                 Some(name) => name.to_string(),
             };
 
-            let quote =Quote::build(
+            if phrase.is_empty() {
+                msg.reply(ctx,"Quote not added\nQuote is empty\n").await?;
+                return Ok(());
+            }
+
+            let quote = Quote::build(
                 CATEGORY::MEMBERS,
                 referenced_message.id.to_string(),
                 referenced_message.author.id.to_string(),
@@ -67,6 +72,12 @@ async fn add(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 #[example="\"Quote\" @person"]
 async fn add_members(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
+
+    if phrase.is_empty() {
+        msg.reply(ctx,"Quote not added\nQuote is empty\n").await?;
+        return Ok(());
+    }
+
     let mut all_quotes = AllQuotes::json_to_vec_movies(msg);
     let quote = if msg.mentions.is_empty() {
         let nick = match msg.author.nick_in(&ctx, msg.guild_id.unwrap()).await {
@@ -119,6 +130,10 @@ async fn add_members(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 async fn add_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     let nick = args.single_quoted::<String>()?;
+    if phrase.is_empty() || nick.is_empty() {
+        msg.reply(ctx,"Quote not added\nQuote is empty\n").await?;
+        return Ok(());
+    }
 
     let mut all_quotes = AllQuotes::json_to_vec_movies(msg);
     let quote = Quote::build(
@@ -149,6 +164,10 @@ async fn add_profs(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let phrase = args.single_quoted::<String>()?;
     let user_id = args.single_quoted::<String>()?;
+    if phrase.is_empty() || user_id.is_empty() {
+        msg.reply(ctx,"Quote not added\nQuote is empty\n").await?;
+        return Ok(());
+    }
 
     let mut all_quotes = AllQuotes::json_to_vec_movies(msg);
     let quote = Quote::build(
@@ -440,6 +459,11 @@ async fn build(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     let user_id = args.single_quoted::<String>()?;
     let name = args.single_quoted::<String>()?;
     let phrase = args.single_quoted::<String>()?;
+
+    if phrase.is_empty() || user_id.is_empty() {
+        msg.reply(ctx,"Quote not added\nQuote is empty\n").await?;
+        return Ok(());
+    }
 
     let quote = Quote::build(
         category,
