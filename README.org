@@ -1,4 +1,4 @@
-#+TITLE: HELLOOOOOOOO
+#+TITLE: HELLOOOOOOOOO
 
 * Introduction
 This is a simple Discord bot written in async rust using serenity.
