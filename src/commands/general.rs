@@ -124,8 +124,7 @@ async fn about(ctx: & Context, msg: &Message) -> CommandResult {
 
             // false = not inline;
             e.fields(vec![
-                ("Discord", "Mariii_01🌹#2773", false),
-                ("Discord", "Your Friend Elmo#9329", false),
+                ("Discord", "Mariii_01🌹#2773\nYour Friend Elmo#9329", false),
                 ("Source Code", "[Mariii-23/discord_bot_rust](https://github.com/Mariii-23/discord_bot_rust.git)", false),
             ]);
             e
