@@ -1,13 +1,20 @@
-use std::{cmp::Ordering, collections::HashMap, fs::{File,write}, io::BufReader};
+use std::{
+    cmp::Ordering,
+    collections::HashMap,
+    fs::{File,write},
+    io::BufReader
+};
 use omdb::*;
 
-use serenity::{builder::CreateMessage, client::Context, model::{channel::{Message, ReactionType}, guild::Emoji}};
+use serenity::{
+    builder::CreateMessage,
+    client::Context,
+    model::channel::{Message, ReactionType},
+};
 use crate::constantes::{APIKEY,MOVIES_PATH,EXTENSION_PATH};
 
 extern crate serde_json;
 use serde::{Deserialize, Serialize};
-
-use super::function_aux::init_hashmap;
 
 #[derive(Eq, Serialize, Deserialize, Debug)]
 //struct para cada linha do ficheiro (provavelmente vai ter que ser muito alterada)

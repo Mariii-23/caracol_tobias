@@ -16,7 +16,10 @@ use quotes_struct::*;
 #[help_available]
 #[only_in(guilds)]
 #[commands(add,show,me,build,number_quotes,show_all)]
-#[description = "**Quotes are fun**\n\nWe have 3 category:\n**\"MEMBERS\"** -> quotes from people in the server\n**\"PROFS\"** -> quotes from profs\n **\"GENERAL\"** -> random phrases "]
+#[description = "**Quotes are fun**\n\nWe have 3 category:\n**\
+                 \"MEMBERS\"** -> quotes from people in the server\n**\
+                 \"PROFS\"** -> quotes from profs\n **\
+                 \"GENERAL\"** -> random phrases "]
 #[default_command(show)]
 #[prefixes("quotes","quote","q")]
 struct Quotes;
@@ -279,7 +282,7 @@ async fn show_members(ctx: &Context, msg: &Message) -> CommandResult {
 /* show all quotes */
 
 #[command]
-#[aliases("all,ls,list")]
+#[aliases("all","ls","list")]
 #[sub_commands(show_all_general,show_all_profs,show_all_members)]
 #[description = "Show all quotes\n"]
 async fn show_all(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {

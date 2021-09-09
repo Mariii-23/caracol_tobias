@@ -15,14 +15,6 @@ use serenity::{
 
 use tracing::{error, instrument};
 
-// fn read_file_and_get_token() -> String {
-//     let mut file = File::open(".env").unwrap();
-//     let mut token = String::new();
-//     file.read_to_string(&mut token)
-//         .expect("Token file not found");
-//     token
-// }
-
 #[tokio::main]
 #[instrument]
  async fn main() {
@@ -32,15 +24,11 @@ use tracing::{error, instrument};
 
      let token = env::var("DISCORD_TOKEN").expect("No token found!");
      // let prefix = env::var("PREFIX").expect("No prefix found!");
-    // let database_credentials = env::var("DATABASE_URL").expect("No database credentials found!");
-    // let lastfm_api_key = env::var("LASTFM_TOKEN").expect("No lastfm api key found!");
-    // let lastfm_secret = env::var("LASTFM_SECRET").expect("No lastfm secret found!");
+     // let database_credentials = env::var("DATABASE_URL").expect("No database credentials found!");
+     // let lastfm_api_key = env::var("LASTFM_TOKEN").expect("No lastfm api key found!");
+     // let lastfm_secret = env::var("LASTFM_SECRET").expect("No lastfm secret found!");
 
     let http = Http::new_with_token(&token);
-
-    //    let token = read_file_and_get_token();
-    // let http = Http::new_with_token(&token);
-
     // let mut client = Client::new(&token)
     //     .event_handler(Handler)
     //     .await
@@ -90,14 +78,9 @@ use tracing::{error, instrument};
         .await
         .expect("Error creating client!");
 
+
      // Start
      if let Err(why) = client.start_autosharded().await {
         error!("An error occurred while running the client: {:?}", why);
      }
-// pub struct ShardMessenger { /* fields omitted */ }
-// use serenity::model::user::OnlineStatus;
-
-//      client.set_status(OnlineStatus::DoNotDisturb);
-//      use serenity::model::gateway::Activity;
-     // client.set_activity(Some(Activity::playing("Heroes of the Storm")));
 }

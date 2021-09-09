@@ -19,12 +19,13 @@
 //--- Fazer uma função como a de cima mas com ping às pessoas em vez de ver o voice channel
 
 extern crate serenity;
-use std::thread;
 use std::time::Duration;
 
 use tokio::time::sleep;
 
-use serenity::{builder::CreateMessage, client::bridge::gateway::ShardClientMessage, framework::standard::{
+use serenity::{
+    framework::standard::{
+        Args,
         macros::{command, group},
          CommandResult,
 }, model::channel::Message, prelude::*};
@@ -40,29 +41,36 @@ use crate::modules::function_aux::init_hashmap;
 
 
 #[group]
-#[commands(add, rm, add_person, rm_person, show, choose_vc, seen, seen_show, present, unpresent)]
+#[commands(add, remove, add_person, remove_person, show, choose_vc, seen, seen_show, present, unpresent)]
 #[prefixes("movie","mv","movies")]
 #[description("movie stuff")]
 struct Movies;
 
 
 #[command]
+#[min_args(1)]
 #[description("Add a movie to the list with either name or IMDB id")]
 #[usage="§movie add title"]
 #[example="§movie add Joker"]
 #[example="§movie add tt7286456 @person1 @person2"]
-async fn add (ctx: &Context, msg: &Message) -> CommandResult {
+async fn add (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
     //dividir a 1a string que supostament é o titulo do filme por "'" (Isto torna obrigatório por o titulo do filme entre ')
     //assim supostamente ficamos com um vetor com a string "§movie add" e com outra string que é o titulo do filme
-    let movie = msg.content.replace("§movie add ", "");
-    let movie = movie.replace("§mv add ", "");
-    let movie: Vec<&str> = movie.split(" <@").collect();
-    let movie = movie[0];
+    // let movie = msg.content.replace("§movie add ", "");
+    // let movie = movie.replace("§mv add ", "");
+    // let movie: Vec<&str> = movie.split(" <@").collect();
+    // let movie = movie[0];
 
     //verifica se o titulo do filme foi escrito entre '
-    if movie.len() < 3 {
-        msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+    // if movie.len() < 3 {
+    //     msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+    //     return Ok(());
+    // }
+
+    let movie = args.current().unwrap();
+    if movie.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
 
@@ -87,10 +95,11 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
 
     //Verifica se foram mencionadas pessoas e guarda o id delas num vetor (também guarda a do autor)
     //Para além disso, também guarda o link
-    let mut people = Vec::new();
-    people.push(msg.author.id.to_string());
+    let mut people = vec![msg.author.id.to_string()];
+    // let mut people = Vec::new();
+    // people.push(msg.author.id.to_string());
     let members = &msg.mentions;
-    if members.len() != 0 {
+    if !members.is_empty() {
         for i in members {
             if !people.contains(&i.id.to_string()) {
                 people.push(i.id.to_string());
@@ -127,24 +136,31 @@ async fn add (ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+#[min_args(1)]
+#[aliases("rm")]
 #[description("Remove a movie to the list")]
 #[usage="§movie rm"]
 #[example="§movie remove Joker"]
-async fn rm (ctx: &Context, msg: &Message) -> CommandResult {
-    let movie = msg.content.replace("§movie rm ", "");
-    let movie = movie.replace("§mv rm ", "");
+async fn remove (ctx: &Context, msg: &Message,args:Args) -> CommandResult {
+    // let movie = msg.content.replace("§movie rm ", "");
+    // let movie = movie.replace("§mv rm ", "");
+    let movie = args.current().unwrap();
+    if movie.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
     let movie = movie.trim();
-    println!("{}", movie);
+    // println!("{}", movie);
 
 
     //verifica se o titulo do filme foi escrito entre '
-    if movie.len() < 3 {
-        msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
-        return Ok(());
-    }
+    // if movie.len() < 3 {
+    //     msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+    //     return Ok(());
+    // }
 
     let mut movies = json_to_vec_movies(msg);
-    if movies.len() == 0 {
+    if movies.is_empty() {
         msg.channel_id.say(&ctx.http, "There are no movies to remove").await?;
         return Ok(());
     }
@@ -161,20 +177,27 @@ async fn rm (ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+#[min_args(2)]
 #[description("Add a person to a movie")]
 #[usage="§movie add_person title @person"]
 #[example="§movie add_person Joker @person"]
-async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
-    let movie = msg.content.replace("§movie add_person ", "");
-    let movie = movie.replace("§mv add_person ", "");
-    let movie: Vec<&str> = movie.split(" <@").collect();
-    let movie = movie[0].trim();
+async fn add_person (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
-    //verifica se o titulo do filme foi escrito entre '
-    if movie.len() < 3 {
-        msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+    let movie = args.current().unwrap();
+    if movie.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
+    // let movie = msg.content.replace("§movie add_person ", "");
+    // let movie = movie.replace("§mv add_person ", "");
+    // let movie: Vec<&str> = movie.split(" <@").collect();
+    // let movie = movie[0].trim();
+
+    // //verifica se o titulo do filme foi escrito entre '
+    // if movie.len() < 3 {
+    //     msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+    //     return Ok(());
+    // }
 
     let person = &msg.mentions;
     if person.len() != 1 {
@@ -202,19 +225,27 @@ async fn add_person (ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+#[min_args(2)]
+#[aliases("rm_person")]
 #[description("Remove a person from a movie")]
 #[usage="§movie remove title @person"]
 #[example="§movie remove Joker @person"]
-async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
-    let movie = msg.content.replace("§movie rm_person ", "");
-    let movie = movie.replace("§mv rm_person ", "");
-    let movie: Vec<&str> = movie.split(" <@").collect();
-    let movie = movie[0].trim();
-    println!("{}", movie);
+async fn remove_person (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    // let movie = msg.content.replace("§movie rm_person ", "");
+    // let movie = movie.replace("§mv rm_person ", "");
+    // let movie: Vec<&str> = movie.split(" <@").collect();
+    // let movie = movie[0].trim();
+    // println!("{}", movie);
 
-    //verifica se o titulo do filme foi escrito entre '
-    if movie.len() < 3 {
-        msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+    // //verifica se o titulo do filme foi escrito entre '
+    // if movie.len() < 3 {
+    //     msg.channel_id.say(&ctx.http, "Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+    //     return Ok(());
+    // }
+
+    let movie = args.current().unwrap();
+    if movie.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
 
@@ -249,13 +280,21 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[aliases("list","ls")]
-async fn show(ctx: &Context, msg: &Message) -> CommandResult {
+async fn show(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut movies = json_to_vec_movies(msg);
     let mut names = init_hashmap(msg, ctx).await;
-    let title = msg.content.replace("§movie show", "");
-    let title = title.replace("§mv show", "");
-    println!("{}", title);
-    if !title.eq("") && !title.contains("present") && !title.contains("unpresent") {
+    // let title = msg.content.replace("§movie show", "");
+    // let title = title.replace("§mv show", "");
+    // println!("{}", title);
+
+    if !args.is_empty() {
+        let title = args.current().unwrap();
+        if title.is_empty() {
+            msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+            return Ok(());
+        }
+
+        // if !title.contains("present") && !title.contains("unpresent") {
         let title = title.trim().to_string();
         let movie = match Movie::search_title(&mut movies, title) {
             Ok(movie) => movie,
@@ -264,10 +303,9 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
                 return Ok(());
             }
         };
-        show_one_mv(msg, ctx, movie, &names).await; 
+        show_one_mv(msg, ctx, movie, &names).await;
         return Ok(());
-        
-
+        // }
     }
 
 
@@ -293,6 +331,7 @@ async fn show(ctx: &Context, msg: &Message) -> CommandResult {
 
 
 #[command]
+#[aliases("vc")]
 #[description("Shows a list of movies that can be seen according to the people in the voice channel")]
 async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
     let names = init_hashmap(msg, ctx).await;
@@ -352,12 +391,19 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
 //Remover o filme da json
 //Adicionar ao outro
 #[command]
-async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
+#[min_args(1)]
+async fn seen(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     //Ir buscar o titulo do filme
-    let title = msg.content.replace("§movie seen ", "");
-    let title = title.replace("§mv seen ", "");
-    let title = title.trim();
-    
+    // let title = msg.content.replace("§movie seen ", "");
+    // let title = title.replace("§mv seen ", "");
+    // let title = title.trim();
+
+    let title = args.current().unwrap();
+    if title.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
+
     //Hash com os ids como key e os nomes como value 
     let names = init_hashmap(msg, ctx).await;
 
@@ -433,12 +479,18 @@ async fn seen(ctx: &Context, msg: &Message) -> CommandResult {
 
 
 #[command]
-async fn seen_show(ctx: &Context, msg: &Message) -> CommandResult {
+async fn seen_show(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut movies = json_to_vec_movies_seen(msg);
     let mut names = init_hashmap(msg, ctx).await;
-    let title = msg.content.replace("§movie seen_show", "");
-    let title = title.replace("§mv seen_show", "");
-    println!("{}", title);
+    // let title = msg.content.replace("§movie seen_show", "");
+    // let title = title.replace("§mv seen_show", "");
+    // println!("{}", title);
+    let title = args.current().unwrap();
+    if title.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
+
     if !title.eq("") {
         let title = title.trim().to_string();
         let movie = match MovieSeen::search_title(&mut movies, title) {
