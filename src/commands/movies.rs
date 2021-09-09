@@ -248,6 +248,7 @@ async fn rm_person (ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
+#[aliases("list","ls")]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
     let mut movies = json_to_vec_movies(msg);
     let mut names = init_hashmap(msg, ctx).await;

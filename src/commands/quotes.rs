@@ -194,6 +194,7 @@ async fn add_general(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
 
 /* show ramdom quotes */
 #[command]
+#[aliases("list","ls")]
 #[sub_commands(show_general,show_profs,show_members)]
 #[description = "Show one quote\n"]
 async fn show(ctx: &Context, msg: &Message) -> CommandResult {
