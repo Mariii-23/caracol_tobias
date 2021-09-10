@@ -2,7 +2,7 @@
 
 
 MAIN_PATH=files
-DIRECTORY_NEED=(quotes movies)
+DIRECTORY_NEED=(quotes movies spicy-memes)
 
 echo "Starting..."
 echo ""

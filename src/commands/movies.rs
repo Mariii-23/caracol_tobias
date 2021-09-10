@@ -50,10 +50,10 @@ struct Movies;
 #[command]
 #[min_args(1)]
 #[description("Add a movie to the list with either name or IMDB id")]
-#[usage="§movie add title"]
-#[example="§movie add Joker"]
-#[example="§movie add tt7286456 @person1 @person2"]
-async fn add (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+#[usage="§movie add \"title\""]
+#[example="§movie add \"Joker\""]
+#[example="§movie add \"tt7286456\" @person1 @person2"]
+async fn add (ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
 
     //dividir a 1a string que supostament é o titulo do filme por "'" (Isto torna obrigatório por o titulo do filme entre ')
     //assim supostamente ficamos com um vetor com a string "§movie add" e com outra string que é o titulo do filme
@@ -68,7 +68,11 @@ async fn add (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     //     return Ok(());
     // }
 
-    let movie = args.current().unwrap();
+    if args.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
+    let movie = args.single_quoted::<String>()?;
     if movie.is_empty() {
         msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
@@ -140,16 +144,20 @@ async fn add (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 #[aliases("rm")]
 #[description("Remove a movie to the list")]
 #[usage="§movie rm"]
-#[example="§movie remove Joker"]
-async fn remove (ctx: &Context, msg: &Message,args:Args) -> CommandResult {
+#[example="§movie remove \"Joker\""]
+async fn remove (ctx: &Context, msg: &Message,mut args:Args) -> CommandResult {
     // let movie = msg.content.replace("§movie rm ", "");
     // let movie = movie.replace("§mv rm ", "");
-    let movie = args.current().unwrap();
+    if args.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
+    let movie = args.single_quoted::<String>()?;
     if movie.is_empty() {
         msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
     }
-    let movie = movie.trim();
+    // let movie = movie.trim();
     // println!("{}", movie);
 
 
@@ -179,11 +187,15 @@ async fn remove (ctx: &Context, msg: &Message,args:Args) -> CommandResult {
 #[command]
 #[min_args(2)]
 #[description("Add a person to a movie")]
-#[usage="§movie add_person title @person"]
-#[example="§movie add_person Joker @person"]
-async fn add_person (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+#[usage="§movie add_person \"title\" @person"]
+#[example="§movie add_person \"Joker\" @person"]
+async fn add_person (ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
 
-    let movie = args.current().unwrap();
+    if args.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
+    let movie = args.single_quoted::<String>()?;
     if movie.is_empty() {
         msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
@@ -228,9 +240,9 @@ async fn add_person (ctx: &Context, msg: &Message, args: Args) -> CommandResult 
 #[min_args(2)]
 #[aliases("rm_person")]
 #[description("Remove a person from a movie")]
-#[usage="§movie remove title @person"]
-#[example="§movie remove Joker @person"]
-async fn remove_person (ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+#[usage="§movie remove \"title\" @person"]
+#[example="§movie remove \"Joker\" @person"]
+async fn remove_person (ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     // let movie = msg.content.replace("§movie rm_person ", "");
     // let movie = movie.replace("§mv rm_person ", "");
     // let movie: Vec<&str> = movie.split(" <@").collect();
@@ -243,7 +255,11 @@ async fn remove_person (ctx: &Context, msg: &Message, args: Args) -> CommandResu
     //     return Ok(());
     // }
 
-    let movie = args.current().unwrap();
+    if args.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
+    let movie = args.single_quoted::<String>()?;
     if movie.is_empty() {
         msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
@@ -280,7 +296,7 @@ async fn remove_person (ctx: &Context, msg: &Message, args: Args) -> CommandResu
 
 #[command]
 #[aliases("list","ls")]
-async fn show(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+async fn show(ctx: &Context, msg: &Message,mut args: Args) -> CommandResult {
     let mut movies = json_to_vec_movies(msg);
     let mut names = init_hashmap(msg, ctx).await;
     // let title = msg.content.replace("§movie show", "");
@@ -288,14 +304,14 @@ async fn show(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     // println!("{}", title);
 
     if !args.is_empty() {
-        let title = args.current().unwrap();
+        let title =  args.single_quoted::<String>()?;
         if title.is_empty() {
             msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
             return Ok(());
         }
 
         // if !title.contains("present") && !title.contains("unpresent") {
-        let title = title.trim().to_string();
+        // let title = title.trim().to_string();
         let movie = match Movie::search_title(&mut movies, title) {
             Ok(movie) => movie,
             Err(title) => {
@@ -392,13 +408,17 @@ async fn choose_vc(ctx: &Context, msg: &Message) -> CommandResult {
 //Adicionar ao outro
 #[command]
 #[min_args(1)]
-async fn seen(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+async fn seen(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     //Ir buscar o titulo do filme
     // let title = msg.content.replace("§movie seen ", "");
     // let title = title.replace("§mv seen ", "");
     // let title = title.trim();
 
-    let title = args.current().unwrap();
+    if args.is_empty() {
+        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
+        return Ok(());
+    }
+    let title = args.single_quoted::<String>()?;
     if title.is_empty() {
         msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
@@ -479,13 +499,13 @@ async fn seen(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
 
 #[command]
-async fn seen_show(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+async fn seen_show(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let mut movies = json_to_vec_movies_seen(msg);
     let mut names = init_hashmap(msg, ctx).await;
     // let title = msg.content.replace("§movie seen_show", "");
     // let title = title.replace("§mv seen_show", "");
     // println!("{}", title);
-    let title = args.current().unwrap();
+    let title = args.single_quoted::<String>()?;
     if title.is_empty() {
         msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
         return Ok(());
