@@ -115,15 +115,18 @@ impl Quote {
     // }
 
 
-    // pub fn id(&self) -> String {
-    //    String::from(&self.id)
-    // }
-    // pub fn user_id(&self) -> String {
-    //    String::from(&self.user_id)
-    // }
-    // pub fn quote(&self) -> String {
-    //    String::from(&self.quote)
-    // }
+    pub fn id(&self) -> String {
+       String::from(&self.id)
+    }
+    pub fn user_id(&self) -> String {
+       String::from(&self.user_id)
+    }
+    pub fn nick(&self) -> String {
+       String::from(&self.nick)
+    }
+    pub fn quote(&self) -> String {
+       String::from(&self.quote)
+    }
 }
 
 
@@ -237,26 +240,72 @@ impl AllQuotes {
     }
 
     /* ----------- remove ------------- */
+    fn remove_by_id_members(&mut self, id: &String) -> Option<Quote> {
+        match &mut self.members {
+            None => (),
+            Some(map_members) => {
+                for (_,vec_quotes) in map_members.iter_mut() {
+                    for (index, quote) in vec_quotes.iter().enumerate() {
+                        if quote.id == id.as_str() {
+                            return Some(vec_quotes.remove(index));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn remove_by_id_general(&mut self, id: &String) -> Option<Quote> {
+        match &mut self.general {
+            None => (),
+            Some(vec_quotes) => {
+                for (index, quote) in vec_quotes.iter().enumerate() {
+                    if quote.id == id.as_str() {
+                        return Some(vec_quotes.remove(index));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn remove_by_id_profs(&mut self, id: &String) -> Option<Quote> {
+        match &mut self.profs {
+            None => (),
+            Some(map_profs) => {
+                for (_,vec_quotes) in map_profs.iter_mut() {
+                    for (index, quote) in vec_quotes.iter().enumerate() {
+                        if quote.id == id.as_str() {
+                            return Some(vec_quotes.remove(index));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
     //TODO Fazer : remover por id de quote
-    // pub fn remove_by_id(&mut self, id: String) -> bool {
-    //     let mut fail = false;
-    //     match &mut self.quotes {
-    //         None => (),
-    //         Some(map_category) => {
-    //             for (_key, map_id) in map_category.iter_mut() {
-    //                 for (_key_id, vec_quotes) in map_id.iter_mut() {
-    //                     for (index, quote) in vec_quotes.iter().enumerate() {
-    //                         if quote.id == id {
-    //                             fail = true;
-    //                             vec_quotes.remove(index);
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     fail
-    // }
+    pub fn remove_by_id(&mut self, id: &String) -> Option<Quote> {
+        match self.remove_by_id_general(id) {
+            None => {
+                match self.remove_by_id_members(id) {
+                    None => self.remove_by_id_profs(id),
+                    Some(quote) => Some(quote),
+                }
+            },
+            Some(quote) => Some(quote),
+        }
+    }
+
+    pub fn remove_by_id_with_category(&mut self, category: CATEGORY, id: &String) -> Option<Quote> {
+        match category {
+            CATEGORY::MEMBERS => self.remove_by_id_members(id),
+            CATEGORY::GENERAL => self.remove_by_id_general(id),
+            CATEGORY::PROFS => self.remove_by_id_profs(id),
+        }
+    }
 
     /*----------------- Get quotes by user id --------------------------*/
     fn get_in_members_by_user_id(&self, id: String) -> Option<Vec<&Quote>> {
@@ -590,6 +639,16 @@ impl AllQuotes {
         quotes
     }
 }
+
+// fn remove_by_id_in_vec_quotes(&mut vec_quotes: Vec<Quote>, id: String) -> Option<Quote> {
+//     for (index, quote) in vec_quotes.iter().enumerate() {
+//         if quote.id == id {
+//             return Some(vec_quotes.remove(index));
+//         }
+//     }
+//     None
+// }
+
 
 /* function aux */
 /// Choose a random quote from given quote vector and convert it to string
