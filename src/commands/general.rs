@@ -6,6 +6,7 @@ use serenity::{framework::standard::{
         Args,
         CommandGroup, CommandResult, HelpOptions,
 }, model::{channel::{Message,ReactionType}, id::UserId }, prelude::*};
+use serenity::utils::Colour;
 
 // use serenity::model::application::CurrentApplicationInfo;
 use std::collections::HashSet;
@@ -30,7 +31,7 @@ async fn help(
 }
 
 #[group]
-#[commands(avatar,ping, hi, about, embed, poll,which)]
+#[commands(avatar,ping, hi, about, embed, poll,which,server_info)]
 #[description = "Some general commands\n"]
 struct General;
 
@@ -53,6 +54,53 @@ struct General;
     msg.react(ctx, '🔥').await?;
     Ok(())
 }
+
+#[command]
+#[description = "Server's Information\n"]
+#[aliases(server)]
+ async fn server_info(ctx: &Context, msg: &Message) -> CommandResult {
+     let guild = match ctx.cache.guild(&msg.guild_id.unwrap()).await {
+         Some(guild) => guild,
+         None => {
+             msg.reply(ctx, "Error" ).await;
+             return Ok(());
+         }
+     };
+
+     let number_users = guild.member_count;
+     // let number_msgs = channel.message_count;
+     let number_channels = guild.channels.len();
+     let number_emoji =  guild.emojis.len();
+     let number_voice_user = guild.voice_states.len();
+     let number_roles = guild.roles.len();
+
+
+     let msg = msg.channel_id.send_message(&ctx.http, |m| {
+         m.embed(|e| {
+             e.colour(Colour::BLITZ_BLUE)
+              .title(&guild.name);
+
+              if let Some(description) = &guild.description {
+                  e.field("Description",description,false);
+              };
+
+              e.field("Members",number_users,true)
+              // .field("MSG",number_msgs,true)
+              .field("Channels",number_channels,true)
+              .field("Roles",number_roles,true)
+              .field("Emojis",number_emoji,true)
+              .field("Members in voice",number_voice_user,true);
+
+             if let Some(icon_url) = guild.icon_url() {
+                 e.image(icon_url);
+             };
+             e
+             // e.footer(|f| f.icon_url(&msg.mem)
+         })
+     });
+     msg.await.unwrap();
+    Ok(())
+ }
 
 // //TODO mehhhh
 // #[command]
