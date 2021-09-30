@@ -9,7 +9,7 @@ use commands::{
     ADMINS_GROUP, EMOJI_GROUP,
     GENERAL_GROUP, MOVIES_GROUP,
     QUOTES_GROUP,SETUP_BOT_GROUP,
-    SPICY_MEMES_GROUP,
+    SPICY_MEMES_GROUP, UNIVERSITY_GROUP
 };
 
 use std::{env,collections::HashSet};
@@ -74,9 +74,10 @@ use tracing::{error, instrument};
         .group(&EXAMPLES_GROUP)
         .group(&MOVIES_GROUP)
         .group(&QUOTES_GROUP)
-         .group(&SETUP_BOT_GROUP)
-         .group(&SPICY_MEMES_GROUP)
-         ;
+        .group(&SETUP_BOT_GROUP)
+        .group(&SPICY_MEMES_GROUP)
+        .group(&UNIVERSITY_GROUP)
+        ;
 
      let mut client = Client::builder(&token)
         .framework(framework)

@@ -6,6 +6,7 @@ pub mod movies;
 pub mod quotes;
 pub mod setup_bot;
 pub mod spicy_memes;
+pub mod university;
 
 pub use admins::ADMINS_GROUP;
 pub use emoji::EMOJI_GROUP;
@@ -15,3 +16,4 @@ pub use movies::MOVIES_GROUP;
 pub use quotes::QUOTES_GROUP;
 pub use setup_bot::SETUP_BOT_GROUP;
 pub use spicy_memes::SPICY_MEMES_GROUP;
+pub use university::UNIVERSITY_GROUP;
