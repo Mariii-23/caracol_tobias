@@ -502,37 +502,27 @@ async fn seen(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 async fn seen_show(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let mut movies = json_to_vec_movies_seen(msg);
     let mut names = init_hashmap(msg, ctx).await;
-    // let title = msg.content.replace("§movie seen_show", "");
-    // let title = title.replace("§mv seen_show", "");
-    // println!("{}", title);
-    let title = args.single_quoted::<String>()?;
-    if title.is_empty() {
-        msg.reply(ctx,"Error! Make sure you put the movie name correctly ('§movie help to see examples)").await?;
-        return Ok(());
+
+    if !args.is_empty() {
+        let title = args.single_quoted::<String>()?;
+        if !title.is_empty() {
+            let movie = match MovieSeen::search_title(&mut movies, title) {
+                Ok(movie) => movie,
+                Err(title) => {
+                    msg.channel_id.say(&ctx.http, format!("Error, movie not found: {}", title)).await?;
+                    return Ok(());
+                }
+            };
+            show_one_mv_seen(ctx, msg, movie, &names).await;
+            return Ok(());
+        }
     }
-
-    if !title.eq("") {
-        let title = title.trim().to_string();
-        let movie = match MovieSeen::search_title(&mut movies, title) {
-            Ok(movie) => movie,
-            Err(title) => {
-                msg.channel_id.say(&ctx.http, format!("Error, movie not found: {}", title)).await?;
-                return Ok(());
-            }
-        };
-        show_one_mv_seen(ctx, msg, movie, &names).await; 
-        return Ok(());
-        
-
-    }
-
 
     let guild = msg.guild_id.unwrap();//.members(&ctx.http, None, None).await.expect("Falha aqui não sei pq");
     let members = guild.members(&ctx.http, Some(100), None).await?;
     for member in members {
         names.insert(member.user.id.to_string(), member.user.name.to_string());
     }
-
 
     show_all_mvs_seen(msg, ctx, &movies).await;
     let pages = show_mv_menu_seen(&movies, &names).await;

@@ -9,7 +9,7 @@ pub const STATUS_PHRASE: &str = "O mundo é dos loucos";
 pub const SHOW_QUOTES_PER_PAGE: usize = 10;
 
 pub mod university {
-    pub const SWAP: &str = "https://swap.lsd.di.uminho.pt/login";
+    pub const SWAP: &str = "https://swap.di.uminho.pt/";
     pub const SCHEDULE: &str =
         "https://alunos.uminho.pt/pt/estudantes/paginas/infouteishorarios.aspx";
     pub const MATERIAL: &str =
