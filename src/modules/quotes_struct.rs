@@ -24,7 +24,6 @@ use std::{
     collections::HashMap,
 };
 
-
 use rand::Rng;
 
 #[derive(Eq, PartialEq, Serialize, Deserialize, Debug, Hash, Clone, Copy)]
@@ -604,7 +603,7 @@ impl AllQuotes {
         path.push_str(server_id);
         path.push_str(EXTENSION_PATH);
 
-        let quotes = serde_json::to_string(&self).unwrap();
+        let quotes = serde_json::to_string_pretty(&self).unwrap();
         write(path, &quotes).expect("Error write Movies on json file");
     }
 

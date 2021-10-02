@@ -215,7 +215,7 @@ pub fn vec_movie_seen_to_json(movies: Vec<MovieSeen>, msg: &Message) {
     path.push_str("_seen");
     path.push_str(EXTENSION_PATH);
 
-    let movies = serde_json::to_string(&movies).unwrap();
+    let movies = serde_json::to_string_pretty(&movies).unwrap();
     write(path,&movies).expect("Error write Movies on json file");
 }
 
